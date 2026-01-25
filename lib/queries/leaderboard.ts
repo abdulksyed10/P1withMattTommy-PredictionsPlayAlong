@@ -8,8 +8,8 @@ import type {
 export async function fetchSeasonLeaderboard(): Promise<LeaderboardSeasonRow[]> {
   const { data, error } = await supabase
     .from("leaderboard_season")
-    .select("user_id, display_name, points")
-    .order("points", { ascending: false });
+    .select("user_id, display_name, total_points")
+    .order("total_points", { ascending: false });
 
   if (error) throw error;
   return (data ?? []) as LeaderboardSeasonRow[];
@@ -30,9 +30,9 @@ export async function fetchRaceLeaderboard(
 ): Promise<LeaderboardRaceRow[]> {
   const { data, error } = await supabase
     .from("leaderboard_race")
-    .select("race_id, user_id, display_name, points")
+    .select("race_id, user_id, display_name, total_points")
     .eq("race_id", raceId)
-    .order("points", { ascending: false });
+    .order("total_points", { ascending: false });
 
   if (error) throw error;
   return (data ?? []) as LeaderboardRaceRow[];

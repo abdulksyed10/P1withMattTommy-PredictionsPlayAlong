@@ -158,7 +158,7 @@ export default function LeaderboardTabs() {
           caption="Season leaderboard"
           rows={seasonRows.map((r) => ({
             display_name: r.display_name,
-            points: r.points,
+            points: r.total_points,
           }))}
         />
       ) : (
@@ -171,7 +171,7 @@ export default function LeaderboardTabs() {
             caption="Race leaderboard"
             rows={raceRows.map((r) => ({
               display_name: r.display_name,
-              points: r.points,
+              points: r.total_points,
             }))}
           />
         </div>
