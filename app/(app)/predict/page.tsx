@@ -2,8 +2,9 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
+// import { createClient } from "@supabase/supabase-js";
 import { ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 type DriverRow = {
   id: string;
@@ -26,7 +27,7 @@ type Pick =
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 function initials(name: string) {
   return name
