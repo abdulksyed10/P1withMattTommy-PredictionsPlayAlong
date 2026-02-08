@@ -170,7 +170,7 @@ export default function PredictPage() {
   const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
 
   // expanded sections
-  const [openKey, setOpenKey] = useState<"good" | "flop" | "p3" | "p2" | "win">("good");
+  const [openKey, setOpenKey] = useState<"good" | "flop" | "p3" | "p2" | "win" | null>("good");
 
   // selections
   const [goodSurprise, setGoodSurprise] = useState<Pick>(null);
@@ -666,7 +666,7 @@ export default function PredictPage() {
           title="Race Winner (P1)"
           description="Pick the driver who will win the race."
           expanded={openKey === "win"}
-          onToggle={() => setOpenKey(openKey === "win" ? "good" : "win")}
+          onToggle={() => setOpenKey(openKey === "win" ? null : "win")}
           summary={winner ? `${driverById.get(winner)?.full_name ?? "Selected"}` : "None"}
         >
           {podiumError ? (
