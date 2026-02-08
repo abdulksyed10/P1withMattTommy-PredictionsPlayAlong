@@ -167,6 +167,8 @@ export default function PredictPage() {
 
   const [submitting, setSubmitting] = useState(false);
 
+  const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
+
   // expanded sections
   const [openKey, setOpenKey] = useState<"good" | "flop" | "p3" | "p2" | "win">("good");
 
@@ -189,29 +191,52 @@ export default function PredictPage() {
         setLoading(true);
         setErr(null);
 
-        const [{ data: d, error: de }, { data: t, error: te }] = await Promise.all([
+        const today = new Date().toISOString().slice(0, 10);
+
+        const [
+          { data: d, error: de },
+          { data: t, error: te },
+          { data: r, error: re },
+        ] = await Promise.all([
           supabase
             .from("drivers")
             .select("id, code, full_name, is_active")
             .eq("is_active", true)
             .order("full_name", { ascending: true }),
+
           supabase
             .from("teams")
             .select("id, code, name, is_active")
             .eq("is_active", true)
             .order("name", { ascending: true }),
+
+          supabase
+            .from("races")
+            .select("id, name, round, race_date, seasons!inner(is_active)")
+            .eq("seasons.is_active", true)
+            .gte("race_date", today)
+            .order("race_date", { ascending: true })
+            .limit(1)
+            .maybeSingle(),
         ]);
 
         if (de) throw de;
         if (te) throw te;
+        if (re) throw re;
 
         if (!mounted) return;
 
         setDrivers((d ?? []) as DriverRow[]);
         setTeams((t ?? []) as TeamRow[]);
+
+        if (r) {
+          setCurrentRace({ id: r.id, label: `Round ${r.round}: ${r.name}` });
+        } else {
+          setCurrentRace(null);
+        }
       } catch (e: any) {
         if (!mounted) return;
-        setErr(e?.message ?? "Failed to load drivers/teams.");
+        setErr(e?.message ?? "Failed to load drivers/teams/race.");
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -219,10 +244,12 @@ export default function PredictPage() {
     }
 
     run();
+
     return () => {
       mounted = false;
     };
   }, []);
+
 
   const driverById = useMemo(() => {
     const m = new Map<string, DriverRow>();
@@ -278,23 +305,11 @@ export default function PredictPage() {
       }
 
       // 2) determine race (next upcoming race in active season)
-      const today = new Date().toISOString().slice(0, 10);
-
-      const { data: race, error: raceErr } = await supabase
-        .from("races")
-        .select("id, race_date, seasons!inner(is_active)")
-        .eq("seasons.is_active", true)
-        .gte("race_date", today)
-        .order("race_date", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (raceErr || !race) {
-        alert(raceErr?.message ?? "No upcoming race found in active season.");
+      if (!currentRace?.id) {
+        alert("No upcoming race found in active season.");
         return;
       }
-
-      const raceId = race.id as string;
+      const raceId = currentRace.id;
 
       // 3) lock check via FP1
       const { data: fp1, error: fp1Err } = await supabase
@@ -544,10 +559,19 @@ export default function PredictPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
-      <SectionHeader
-        title="Predictions"
-        subtitle="Submit before Practice 1. First race week is standard (no sprint)."
-      />
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <SectionHeader
+          title="Predictions"
+          subtitle="Submit before Practice 1. First race week is standard (no sprint)."
+        />
+
+        <div className="text-right shrink-0">
+          <div className="text-xs text-muted-foreground">Predicting for</div>
+          <div className="text-sm font-semibold">
+            {currentRace ? currentRace.label : "—"}
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-4">
         <QuestionCard
