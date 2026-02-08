@@ -170,11 +170,12 @@ export default function PredictPage() {
   const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
 
   // expanded sections
-  const [openKey, setOpenKey] = useState<"good" | "flop" | "p3" | "p2" | "win" | null>("good");
+  const [openKey, setOpenKey] = useState<"good" | "flop" | "pole_position" | "p3" | "p2" | "win" | null>("good");
 
   // selections
   const [goodSurprise, setGoodSurprise] = useState<Pick>(null);
   const [bigFlop, setBigFlop] = useState<Pick>(null);
+  const [pole_position, setPolePosition] = useState<string | null>(null);
   const [p3, setP3] = useState<string | null>(null);
   const [p2, setP2] = useState<string | null>(null);
   const [winner, setWinner] = useState<string | null>(null);
@@ -323,6 +324,7 @@ export default function PredictPage() {
       const missing: string[] = [];
       if (!goodSurprise) missing.push("Good Surprise");
       if (!bigFlop) missing.push("Big Flop");
+      if (!pole_position) missing.push("Pole Position");
       if (!p3) missing.push("P3");
       if (!p2) missing.push("P2");
       if (!winner) missing.push("Race Winner");
@@ -358,7 +360,7 @@ export default function PredictPage() {
       }
 
       // 4) fetch question IDs by key
-      const QUESTION_KEYS = ["good_surprise", "big_flop", "p3", "p2", "p1_winner"] as const;
+      const QUESTION_KEYS = ["good_surprise", "big_flop", "pole_position", "p3", "p2", "p1_winner"] as const;
 
       const { data: questions, error: qErr } = await supabase
         .from("questions")
@@ -414,6 +416,15 @@ export default function PredictPage() {
           question_id: qidByKey.get("big_flop"),
           answer_driver_id: bigFlop?.kind === "driver" ? bigFlop.id : null,
           answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
+          answer_int: null,
+          answer_text: null,
+          updated_at: nowIso,
+        },
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("pole_position"),
+          answer_driver_id: pole_position,
+          answer_team_id: null,
           answer_int: null,
           answer_text: null,
           updated_at: nowIso,
@@ -621,7 +632,7 @@ export default function PredictPage() {
           title="Big Flop"
           description="Pick the driver or team you think will underperform expectations."
           expanded={openKey === "flop"}
-          onToggle={() => setOpenKey(openKey === "flop" ? "p3" : "flop")}
+          onToggle={() => setOpenKey(openKey === "flop" ? "pole_position" : "flop")}
           summary={pickLabel(bigFlop)}
         >
           {surpriseFlopError ? (
@@ -630,6 +641,16 @@ export default function PredictPage() {
             </div>
           ) : null}
           {driverOrTeamGrid(bigFlop, setBigFlop, flopTab, setFlopTab)}
+        </QuestionCard>
+
+        <QuestionCard
+          title="Race Pole Position"
+          description="Pick the driver who will start from pole position."
+          expanded={openKey === "pole_position"}
+          onToggle={() => setOpenKey(openKey === "pole_position" ? "p3" : "pole_position")}
+          summary={pole_position ? `${driverById.get(pole_position)?.full_name ?? "Selected"}` : "None"}
+        >
+          {driverGrid(pole_position, (id) => setPolePosition(id))}
         </QuestionCard>
 
         <QuestionCard
@@ -698,6 +719,7 @@ export default function PredictPage() {
               onClick={() => {
                 setGoodSurprise(null);
                 setBigFlop(null);
+                setPolePosition(null);
                 setP3(null);
                 setP2(null);
                 setWinner(null);
