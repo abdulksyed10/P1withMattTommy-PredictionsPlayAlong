@@ -304,6 +304,18 @@ export default function PredictPage() {
         return;
       }
 
+      const missing: string[] = [];
+      if (!goodSurprise) missing.push("Good Surprise");
+      if (!bigFlop) missing.push("Big Flop");
+      if (!p3) missing.push("P3");
+      if (!p2) missing.push("P2");
+      if (!winner) missing.push("Race Winner");
+
+      if (missing.length) {
+        alert(`Missing: ${missing.join(", ")}`);
+        return;
+      }
+
       // 2) determine race (next upcoming race in active season)
       if (!currentRace?.id) {
         alert("No upcoming race found in active season.");
@@ -601,6 +613,11 @@ export default function PredictPage() {
           onToggle={() => setOpenKey(openKey === "p3" ? "p2" : "p3")}
           summary={p3 ? `${driverById.get(p3)?.full_name ?? "Selected"}` : "None"}
         >
+          {podiumError ? (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+              {podiumError}
+            </div>
+          ) : null}
           {driverGrid(p3, (id) => setP3(id))}
         </QuestionCard>
 
@@ -611,6 +628,11 @@ export default function PredictPage() {
           onToggle={() => setOpenKey(openKey === "p2" ? "win" : "p2")}
           summary={p2 ? `${driverById.get(p2)?.full_name ?? "Selected"}` : "None"}
         >
+          {podiumError ? (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+              {podiumError}
+            </div>
+          ) : null}
           {driverGrid(p2, (id) => setP2(id))}
         </QuestionCard>
 
