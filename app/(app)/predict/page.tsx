@@ -273,12 +273,28 @@ export default function PredictPage() {
     return t ? `${t.name} (${t.code})` : "Team selected";
   }
 
+  function pickKey(p: Pick) {
+    if (!p) return null;
+    return `${p.kind}:${p.id}`;
+  }
+
+
   const podiumError = useMemo(() => {
     const ids = [winner, p2, p3].filter(Boolean) as string[];
     const set = new Set(ids);
     if (ids.length !== set.size) return "Winner, P2, and P3 must be different drivers.";
     return null;
   }, [winner, p2, p3]);
+
+  const surpriseFlopError = useMemo(() => {
+    const a = pickKey(goodSurprise);
+    const b = pickKey(bigFlop);
+
+    if (a && b && a === b) {
+      return "Good Surprise and Big Flop cannot be the same pick.";
+    }
+    return null;
+  }, [goodSurprise, bigFlop]);
 
   async function handleSubmit() {
     if (submitting) return;
@@ -593,6 +609,11 @@ export default function PredictPage() {
           onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
           summary={pickLabel(goodSurprise)}
         >
+          {surpriseFlopError ? (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+              {surpriseFlopError}
+            </div>
+          ) : null}
           {driverOrTeamGrid(goodSurprise, setGoodSurprise, goodTab, setGoodTab)}
         </QuestionCard>
 
@@ -603,6 +624,11 @@ export default function PredictPage() {
           onToggle={() => setOpenKey(openKey === "flop" ? "p3" : "flop")}
           summary={pickLabel(bigFlop)}
         >
+          {surpriseFlopError ? (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+              {surpriseFlopError}
+            </div>
+          ) : null}
           {driverOrTeamGrid(bigFlop, setBigFlop, flopTab, setFlopTab)}
         </QuestionCard>
 
@@ -688,11 +714,11 @@ export default function PredictPage() {
               type="button"
               className={[
                 "rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground",
-                podiumError || submitting
+                podiumError || surpriseFlopError || submitting
                   ? "bg-muted cursor-not-allowed"
                   : "bg-primary hover:opacity-95",
               ].join(" ")}
-              disabled={!!podiumError || submitting}
+              disabled={!!podiumError || !!surpriseFlopError || submitting}
               onClick={handleSubmit}
             >
               {submitting ? "Submitting..." : "Submit Predictions"}
