@@ -1,0 +1,59 @@
+:root {
+  /* Base */
+  --background: 240 10% 4%;           /* near-black */
+  --foreground: 0 0% 98%;             /* near-white */
+
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 98%;
+
+  --muted: 240 8% 10%;
+  --muted-foreground: 240 6% 65%;
+
+  --border: 240 6% 14%;
+  --input: 240 6% 14%;
+
+  /* P1 Purple (primary) */
+  /* Primary chosen from your spectrum: #7700F6 */
+  --primary: 269 100% 48%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Accent/hover surfaces */
+  --accent: 269 100% 15%;
+  --accent-foreground: 0 0% 98%;
+
+  /* “Danger” (for error banners) */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+
+  /* Focus ring */
+  --ring: 269 100% 55%;
+
+  /* Radius */
+  --radius: 16px;
+}
+
+/* Optional: slightly different tuning for light mode if you ever enable it */
+.light {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 4%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+
+  --muted: 240 10% 96%;
+  --muted-foreground: 240 5% 35%;
+
+  --border: 240 6% 88%;
+  --input: 240 6% 88%;
+
+  --primary: 269 100% 48%;
+  --primary-foreground: 0 0% 100%;
+
+  --accent: 269 100% 94%;
+  --accent-foreground: 240 10% 4%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+
+  --ring: 269 100% 55%;
+}
