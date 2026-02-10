@@ -106,21 +106,25 @@ export default function LeaderboardTabs() {
 
       <div className="mb-4 flex items-center gap-2">
         <button
-          className={`rounded-lg px-3 py-2 text-sm border ${
+          className={[
+            "rounded-lg px-3 py-2 text-sm font-semibold border transition",
+            "focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40",
             tab === "season"
-              ? "border-neutral-700 bg-neutral-900 text-neutral-100"
-              : "border-neutral-900 bg-neutral-950 text-neutral-300 hover:bg-neutral-900/40"
-          }`}
+              ? "border-[#7700F6]/60 bg-[#7700F6]/15 text-white"
+              : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white",
+          ].join(" ")}
           onClick={() => setTab("season")}
         >
           Season
         </button>
         <button
-          className={`rounded-lg px-3 py-2 text-sm border ${
+          className={[
+            "rounded-lg px-3 py-2 text-sm font-semibold border transition",
+            "focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40",
             tab === "race"
-              ? "border-neutral-700 bg-neutral-900 text-neutral-100"
-              : "border-neutral-900 bg-neutral-950 text-neutral-300 hover:bg-neutral-900/40"
-          }`}
+              ? "border-[#7700F6]/60 bg-[#7700F6]/15 text-white"
+              : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white",
+          ].join(" ")}
           onClick={() => setTab("race")}
         >
           Race
@@ -130,7 +134,8 @@ export default function LeaderboardTabs() {
 
         {tab === "race" && (
           <select
-            className="max-w-85 rounded-lg border border-neutral-800 bg-neutral-950 px-3 py-2 text-sm text-neutral-100"
+            className="max-w-85 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white
+              focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40 focus:border-[#7700F6]/60"
             value={selectedRaceId}
             onChange={(e) => setSelectedRaceId(e.target.value)}
           >
