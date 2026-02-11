@@ -1,7 +1,10 @@
+/* /app/theme.css (or /styles/theme.css depending on your project) */
+
+/* Default = DARK (P1 neon purple on near-black) */
 :root {
   /* Base */
-  --background: 240 10% 4%;           /* near-black */
-  --foreground: 0 0% 98%;             /* near-white */
+  --background: 240 10% 4%;
+  --foreground: 0 0% 98%;
 
   --card: 240 10% 6%;
   --card-foreground: 0 0% 98%;
@@ -12,16 +15,15 @@
   --border: 240 6% 14%;
   --input: 240 6% 14%;
 
-  /* P1 Purple (primary) */
-  /* Primary chosen from your spectrum: #7700F6 */
+  /* Brand (Primary from your spectrum: #7700F6) */
   --primary: 269 100% 48%;
   --primary-foreground: 0 0% 100%;
 
-  /* Accent/hover surfaces */
+  /* Accent surfaces */
   --accent: 269 100% 15%;
   --accent-foreground: 0 0% 98%;
 
-  /* “Danger” (for error banners) */
+  /* Danger */
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
 
@@ -30,30 +32,64 @@
 
   /* Radius */
   --radius: 16px;
+
+  /* Extra “P1 vibe” tokens you can use anywhere (optional, but useful) */
+  --p1-purple-1: 269 98% 44%; /* ~ #6F02DF */
+  --p1-purple-2: 271 96% 48%; /* ~ #7C07EC */
+  --p1-purple-3: 271 58% 49%; /* ~ #7E30CA */
+  --p1-purple-4: 265 100% 49%; /* ~ #6600FC */
+  --p1-purple-5: 270 100% 52%; /* ~ #8200F4 */
+  --p1-purple-6: 269 100% 48%; /* #7700F6 */
+  --p1-purple-7: 266 100% 49%; /* ~ #6D00FA */
+
+  --p1-glow: 0 0 18px hsl(var(--primary) / 0.55);
+  --p1-glow-strong: 0 0 28px hsl(var(--p1-purple-5) / 0.65);
+
+  --p1-gradient: linear-gradient(
+    135deg,
+    hsl(var(--p1-purple-1)),
+    hsl(var(--p1-purple-6)),
+    hsl(var(--p1-purple-5))
+  );
 }
 
-/* Optional: slightly different tuning for light mode if you ever enable it */
-.light {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 4%;
+/*
+  LIGHT MODE (more “out there”)
+  - Bright, tinted surfaces
+  - Stronger accent backgrounds
+  - More obvious purple presence in cards/borders
+*/
+html.light {
+  --background: 255 55% 98%;            /* very light violet */
+  --foreground: 240 12% 10%;            /* deep ink */
 
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 4%;
+  --card-foreground: 240 12% 10%;
 
-  --muted: 240 10% 96%;
-  --muted-foreground: 240 5% 35%;
+  --muted: 255 65% 95%;                 /* tinted panels */
+  --muted-foreground: 240 10% 32%;
 
-  --border: 240 6% 88%;
-  --input: 240 6% 88%;
+  --border: 269 90% 70%;                /* purple-tinted borders */
+  --input: 269 90% 70%;
 
-  --primary: 269 100% 48%;
+  --primary: 269 100% 46%;              /* keep brand strong */
   --primary-foreground: 0 0% 100%;
 
-  --accent: 269 100% 94%;
-  --accent-foreground: 240 10% 4%;
+  --accent: 269 100% 92%;               /* obvious purple wash */
+  --accent-foreground: 240 12% 10%;
 
   --destructive: 0 72% 51%;
   --destructive-foreground: 0 0% 98%;
 
-  --ring: 269 100% 55%;
+  --ring: 269 100% 46%;
+
+  --p1-glow: 0 0 18px hsl(var(--primary) / 0.35);
+  --p1-glow-strong: 0 0 28px hsl(var(--p1-purple-5) / 0.45);
+
+  --p1-gradient: linear-gradient(
+    135deg,
+    hsl(var(--p1-purple-6) / 0.18),
+    hsl(var(--p1-purple-5) / 0.14),
+    hsl(var(--p1-purple-1) / 0.12)
+  );
 }
