@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Flag, Trophy, Info, LogIn } from "lucide-react";
@@ -40,24 +41,44 @@ export function Navbar() {
   return (
     <header className="fixed top-0 inset-x-0 z-50 border-b border-border bg-background/75 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
+
+        {/* LOGO */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 font-semibold tracking-tight"
+          className="inline-flex items-center gap-3 font-semibold tracking-tight"
         >
-          <span
-            className="h-8 w-8 rounded-xl"
-            style={{ background: "var(--p1-gradient)", boxShadow: "var(--p1-glow)" }}
-            aria-hidden="true"
-          />
-          <span>P1 Predictions</span>
+          <div className="relative h-9 w-9">
+            <Image
+              src="/images/logo/logo.png"
+              alt="P1 Predictions Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span className="text-foreground">P1 Predictions</span>
         </Link>
 
+        {/* DESKTOP NAV */}
         <nav className="hidden md:flex items-center gap-2">
-          <NavLink href="/how-it-works" label="How it works" icon={<Info className="h-4 w-4" />} />
-          <NavLink href="/predict" label="Predict" icon={<Flag className="h-4 w-4" />} />
-          <NavLink href="/leaderboard" label="Leaderboard" icon={<Trophy className="h-4 w-4" />} />
+          <NavLink
+            href="/how-it-works"
+            label="How it works"
+            icon={<Info className="h-4 w-4" />}
+          />
+          <NavLink
+            href="/predict"
+            label="Predict"
+            icon={<Flag className="h-4 w-4" />}
+          />
+          <NavLink
+            href="/leaderboard"
+            label="Leaderboard"
+            icon={<Trophy className="h-4 w-4" />}
+          />
         </nav>
 
+        {/* RIGHT SIDE */}
         <div className="flex items-center gap-2">
           <Link
             href="/login"
@@ -66,16 +87,29 @@ export function Navbar() {
             <LogIn className="h-4 w-4" />
             <span>Login</span>
           </Link>
+
           <ThemeToggle />
         </div>
       </div>
 
-      {/* simple mobile nav */}
+      {/* MOBILE NAV */}
       <div className="md:hidden border-t border-border bg-background/75 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-2 flex items-center gap-2 overflow-x-auto">
-          <NavLink href="/how-it-works" label="How it works" icon={<Info className="h-4 w-4" />} />
-          <NavLink href="/predict" label="Predict" icon={<Flag className="h-4 w-4" />} />
-          <NavLink href="/leaderboard" label="Leaderboard" icon={<Trophy className="h-4 w-4" />} />
+          <NavLink
+            href="/how-it-works"
+            label="How it works"
+            icon={<Info className="h-4 w-4" />}
+          />
+          <NavLink
+            href="/predict"
+            label="Predict"
+            icon={<Flag className="h-4 w-4" />}
+          />
+          <NavLink
+            href="/leaderboard"
+            label="Leaderboard"
+            icon={<Trophy className="h-4 w-4" />}
+          />
         </div>
       </div>
     </header>
