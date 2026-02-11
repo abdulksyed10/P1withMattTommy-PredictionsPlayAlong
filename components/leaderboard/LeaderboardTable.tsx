@@ -27,7 +27,7 @@ export function LeaderboardTable({
 
   return (
     <div className="w-full overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-      <table className="w-full min-w-[520px] text-left text-sm text-foreground">
+      <table className="w-full min-w-130 text-left text-sm text-foreground">
         <caption className="sr-only">{caption}</caption>
 
         <thead className="border-b border-border text-muted-foreground">

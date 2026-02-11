@@ -38,7 +38,7 @@ function TabButton({
         "rounded-full px-4 py-2 text-sm font-semibold border transition",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-border bg-accent text-accent-foreground shadow-[var(--p1-glow)]"
+          ? "border-border bg-accent text-accent-foreground shadow-(--p1-glow)"
           : "border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-accent/40",
       ].join(" ")}
     >

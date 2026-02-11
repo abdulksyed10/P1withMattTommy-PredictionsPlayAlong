@@ -27,7 +27,7 @@ function NavLink({
         "inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm transition",
         "border border-transparent",
         active
-          ? "bg-accent text-accent-foreground border-border shadow-[var(--p1-glow)]"
+          ? "bg-accent text-accent-foreground border-border shadow-(--p1-glow)"
           : "text-muted-foreground hover:text-foreground hover:bg-card hover:border-border",
       ].join(" ")}
     >
@@ -82,7 +82,7 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)]"
+            className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-(--p1-glow)"
           >
             <LogIn className="h-4 w-4" />
             <span>Login</span>
