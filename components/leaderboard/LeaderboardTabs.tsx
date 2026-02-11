@@ -21,6 +21,32 @@ function formatRaceLabel(r: RaceOption) {
   return `${round}${r.name}${date ? ` (${date})` : ""}`;
 }
 
+function TabButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-full px-4 py-2 text-sm font-semibold border transition",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        active
+          ? "border-border bg-accent text-accent-foreground shadow-[var(--p1-glow)]"
+          : "border-border/70 bg-card text-muted-foreground hover:text-foreground hover:bg-accent/40",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function LeaderboardTabs() {
   const [tab, setTab] = useState<Tab>("season");
 
@@ -56,23 +82,20 @@ export default function LeaderboardTabs() {
         setSeasonRows(season);
         setRaces(raceOptions);
 
-        // Default race selection: first race that has any leaderboard rows (best effort)
-        // If you have a "scored_at" or similar, replace this logic later.
-        if (raceOptions.length > 0) {
-          setSelectedRaceId(raceOptions[0].id);
-        }
+        if (raceOptions.length > 0) setSelectedRaceId(raceOptions[0].id);
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load leaderboard.");
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
-  // Load race leaderboard when race changes (only when race tab is used OR always; your call)
+  // Load race leaderboard when race changes
   useEffect(() => {
     if (!selectedRaceId) return;
     let cancelled = false;
@@ -96,66 +119,54 @@ export default function LeaderboardTabs() {
   }, [selectedRaceId]);
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="mx-auto w-full max-w-4xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-neutral-100">Leaderboard</h1>
-        <p className="mt-1 text-sm text-neutral-400">
+        <h1 className="text-3xl font-semibold text-foreground">Leaderboard</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Season totals by default. Switch to Race for per-race results.
         </p>
       </div>
 
-      <div className="mb-4 flex items-center gap-2">
-        <button
-          className={[
-            "rounded-lg px-3 py-2 text-sm font-semibold border transition",
-            "focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40",
-            tab === "season"
-              ? "border-[#7700F6]/60 bg-[#7700F6]/15 text-white"
-              : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white",
-          ].join(" ")}
-          onClick={() => setTab("season")}
-        >
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <TabButton active={tab === "season"} onClick={() => setTab("season")}>
           Season
-        </button>
-        <button
-          className={[
-            "rounded-lg px-3 py-2 text-sm font-semibold border transition",
-            "focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40",
-            tab === "race"
-              ? "border-[#7700F6]/60 bg-[#7700F6]/15 text-white"
-              : "border-white/10 bg-transparent text-white/70 hover:bg-white/5 hover:text-white",
-          ].join(" ")}
-          onClick={() => setTab("race")}
-        >
-          Race
-        </button>
+        </TabButton>
 
-        <div className="ml-auto" />
+        <TabButton active={tab === "race"} onClick={() => setTab("race")}>
+          Race
+        </TabButton>
+
+        <div className="flex-1" />
 
         {tab === "race" && (
-          <select
-            className="max-w-85 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-sm text-white
-              focus:outline-none focus:ring-2 focus:ring-[#7700F6]/40 focus:border-[#7700F6]/60"
-            value={selectedRaceId}
-            onChange={(e) => setSelectedRaceId(e.target.value)}
-          >
-            {races.map((r) => (
-              <option key={r.id} value={r.id}>
-                {formatRaceLabel(r)}
-              </option>
-            ))}
-          </select>
+          <label className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground hidden sm:inline">
+              Race
+            </span>
+            <select
+              className="w-[320px] max-w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={selectedRaceId}
+              onChange={(e) => setSelectedRaceId(e.target.value)}
+            >
+              {races.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {formatRaceLabel(r)}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+        <div className="mb-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-xl border border-neutral-800 bg-neutral-950 px-4 py-6 text-neutral-300">
+        <div className="rounded-2xl border border-border bg-card px-4 py-6 text-muted-foreground">
           Loading…
         </div>
       ) : tab === "season" ? (
@@ -168,10 +179,11 @@ export default function LeaderboardTabs() {
         />
       ) : (
         <div className="space-y-3">
-          <div className="text-sm text-neutral-400">
+          <div className="text-sm text-muted-foreground">
             {selectedRace ? formatRaceLabel(selectedRace) : "Select a race."}
             {loadingRace ? " — loading…" : ""}
           </div>
+
           <LeaderboardTable
             caption="Race leaderboard"
             rows={raceRows.map((r) => ({

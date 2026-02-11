@@ -26,38 +26,66 @@ export function LeaderboardTable({
   const ranks = denseRanks(rows.map((r) => r.points));
 
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-[#7700F6]/25 bg-black/40">
-      <table className="w-full min-w-130 text-left text-sm text-white">
+    <div className="w-full overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
+      <table className="w-full min-w-[520px] text-left text-sm text-foreground">
         <caption className="sr-only">{caption}</caption>
-        <thead className="border-b border-white/10 text-white/80">
+
+        <thead className="border-b border-border text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 w-16">#</th>
-            <th className="px-4 py-3">Player</th>
-            <th className="px-4 py-3 w-28 text-right">Points</th>
+            <th className="px-4 py-3 w-16 font-semibold">#</th>
+            <th className="px-4 py-3 font-semibold">Player</th>
+            <th className="px-4 py-3 w-28 text-right font-semibold">Points</th>
           </tr>
         </thead>
+
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td className="px-4 py-6 text-neutral-400" colSpan={3}>
+              <td className="px-4 py-6 text-muted-foreground" colSpan={3}>
                 No results yet.
               </td>
             </tr>
           ) : (
-            rows.map((r, i) => (
-              <tr
-                key={`${r.display_name ?? "unknown"}-${i}`}
-                className="border-b border-white/5 last:border-b-0 hover:bg-white/5"
-              >
-                <td className="px-4 py-3 text-neutral-300">{ranks[i]}</td>
-                <td className="px-4 py-3 text-neutral-100">
-                  {r.display_name ?? "Unnamed"}
-                </td>
-                <td className="px-4 py-3 text-right text-neutral-100 tabular-nums">
-                  {r.points}
-                </td>
-              </tr>
-            ))
+            rows.map((r, i) => {
+              const rank = ranks[i];
+              const isFirst = rank === 1;
+
+              return (
+                <tr
+                  key={`${r.display_name ?? "unknown"}-${i}`}
+                  className="border-b border-border/60 last:border-b-0 hover:bg-accent/40 transition-colors"
+                >
+                  <td
+                    className={[
+                      "px-4 py-3 tabular-nums",
+                      isFirst ? "font-semibold text-primary" : "text-muted-foreground",
+                    ].join(" ")}
+                    style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
+                  >
+                    {rank}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <span
+                      className={isFirst ? "font-semibold" : "font-medium"}
+                      style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
+                    >
+                      {r.display_name ?? "Unnamed"}
+                    </span>
+                  </td>
+
+                  <td
+                    className={[
+                      "px-4 py-3 text-right tabular-nums",
+                      isFirst ? "font-semibold text-primary" : "font-medium",
+                    ].join(" ")}
+                    style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
+                  >
+                    {r.points}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
