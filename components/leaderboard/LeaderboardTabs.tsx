@@ -144,7 +144,7 @@ export default function LeaderboardTabs() {
               Race
             </span>
             <select
-              className="w-[320px] max-w-full rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground
+              className="w-full sm:w-[320px] rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={selectedRaceId}
               onChange={(e) => setSelectedRaceId(e.target.value)}

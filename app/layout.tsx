@@ -35,7 +35,7 @@ export default function RootLayout({
       >
         <Navbar />
         {/* top padding so content doesn't sit under fixed navbar */}
-        <main className="pt-16">{children}</main>
+        <main className="pt-28 md:pt-16">{children}</main>
       </body>
     </html>
   );

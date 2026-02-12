@@ -26,22 +26,24 @@ export function LeaderboardTable({
   const ranks = denseRanks(rows.map((r) => r.points));
 
   return (
-    <div className="w-full overflow-x-auto rounded-2xl border border-border bg-card shadow-sm">
-      <table className="w-full min-w-130 text-left text-sm text-foreground">
+    <div className="w-full rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+      <table className="w-full text-left text-sm text-foreground table-fixed">
         <caption className="sr-only">{caption}</caption>
 
         <thead className="border-b border-border text-muted-foreground">
           <tr>
-            <th className="px-4 py-3 w-16 font-semibold">#</th>
-            <th className="px-4 py-3 font-semibold">Player</th>
-            <th className="px-4 py-3 w-28 text-right font-semibold">Points</th>
+            <th className="px-3 sm:px-4 py-3 w-12 sm:w-16 font-semibold">#</th>
+            <th className="px-3 sm:px-4 py-3 font-semibold">Player</th>
+            <th className="px-3 sm:px-4 py-3 w-20 sm:w-28 text-right font-semibold">
+              Pts
+            </th>
           </tr>
         </thead>
 
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td className="px-4 py-6 text-muted-foreground" colSpan={3}>
+              <td className="px-3 sm:px-4 py-6 text-muted-foreground" colSpan={3}>
                 No results yet.
               </td>
             </tr>
@@ -57,17 +59,23 @@ export function LeaderboardTable({
                 >
                   <td
                     className={[
-                      "px-4 py-3 tabular-nums",
-                      isFirst ? "font-semibold text-primary" : "text-muted-foreground",
+                      "px-3 sm:px-4 py-3 tabular-nums",
+                      isFirst
+                        ? "font-semibold text-primary"
+                        : "text-muted-foreground",
                     ].join(" ")}
                     style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
                   >
                     {rank}
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3">
                     <span
-                      className={isFirst ? "font-semibold" : "font-medium"}
+                      className={[
+                        "block truncate",
+                        isFirst ? "font-semibold" : "font-medium",
+                      ].join(" ")}
+                      title={r.display_name ?? "Unnamed"}
                       style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
                     >
                       {r.display_name ?? "Unnamed"}
@@ -76,7 +84,7 @@ export function LeaderboardTable({
 
                   <td
                     className={[
-                      "px-4 py-3 text-right tabular-nums",
+                      "px-3 sm:px-4 py-3 text-right tabular-nums",
                       isFirst ? "font-semibold text-primary" : "font-medium",
                     ].join(" ")}
                     style={isFirst ? { textShadow: "var(--p1-glow)" } : undefined}
