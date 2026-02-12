@@ -3,8 +3,9 @@ export function ThemeScript() {
 (function () {
   try {
     var stored = localStorage.getItem('theme'); // 'light' | 'dark' | null
-    var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
-    var theme = stored ? stored : (prefersLight ? 'light' : 'dark');
+    // var prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    // var theme = stored ? stored : (prefersLight ? 'light' : 'dark');
+    var theme = stored ? stored : 'light'; // DEFAULT LIGHT
 
     var root = document.documentElement;
     root.classList.remove('light', 'dark');

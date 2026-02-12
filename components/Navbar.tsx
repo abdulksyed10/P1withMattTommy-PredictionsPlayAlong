@@ -47,7 +47,10 @@ export function Navbar() {
           href="/"
           className="inline-flex items-center gap-3 font-semibold tracking-tight"
         >
-          <div className="relative h-9 w-9">
+          <div 
+            className="relative h-14 w-14"
+            style={{ filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.6))" }}
+          >
             <Image
               src="/images/logo/logo.png"
               alt="P1 Predictions Logo"

@@ -7,8 +7,10 @@ import { Moon, Sun } from "lucide-react";
 type Theme = "light" | "dark";
 
 function getTheme(): Theme {
-  if (typeof document === "undefined") return "dark";
-  return document.documentElement.classList.contains("light") ? "light" : "dark";
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.classList.contains("dark")
+    ? "dark"
+    : "light";
 }
 
 function setTheme(theme: Theme) {
@@ -20,27 +22,46 @@ function setTheme(theme: Theme) {
 }
 
 export function ThemeToggle() {
-  const [theme, setThemeState] = useState<Theme>("dark");
+  const [theme, setThemeState] = useState<Theme>("light");
 
   useEffect(() => {
-    setThemeState(getTheme());
+    const stored = localStorage.getItem("theme") as Theme | null;
+
+    if (stored) {
+      setTheme(stored);
+      setThemeState(stored);
+    } else {
+      // DEFAULT TO LIGHT
+      setTheme("light");
+      setThemeState("light");
+    }
   }, []);
 
+  const nextTheme: Theme = theme === "light" ? "dark" : "light";
+
   const toggle = () => {
-    const next: Theme = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    setThemeState(next);
+    setTheme(nextTheme);
+    setThemeState(nextTheme);
   };
 
   return (
     <button
       type="button"
       onClick={toggle}
-      className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground shadow-sm transition hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       aria-label="Toggle theme"
     >
-      {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-      <span className="hidden sm:inline">{theme === "dark" ? "Dark" : "Light"}</span>
+      {nextTheme === "dark" ? (
+        <>
+          <Moon className="h-4 w-4" />
+          <span className="hidden sm:inline">Dark</span>
+        </>
+      ) : (
+        <>
+          <Sun className="h-4 w-4" />
+          <span className="hidden sm:inline">Light</span>
+        </>
+      )}
     </button>
   );
 }
