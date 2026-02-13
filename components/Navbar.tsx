@@ -123,7 +123,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={onSignOut}
-                className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)]"
+                className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card text-foreground transition hover:bg-accent hover:shadow-(--p1-glow)"
                 aria-label="Sign out"
                 title="Sign out"
               >
@@ -134,7 +134,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={onSignOut}
-                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)]"
+                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-(--p1-glow)"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Sign out</span>
@@ -145,7 +145,7 @@ export function Navbar() {
               {/* Mobile: icon-only */}
               <Link
                 href="/login"
-                className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)]"
+                className="inline-flex sm:hidden items-center justify-center h-10 w-10 rounded-full border border-border bg-card text-foreground transition hover:bg-accent hover:shadow-(--p1-glow)"
                 aria-label="Login"
                 title="Login"
               >
@@ -155,7 +155,7 @@ export function Navbar() {
               {/* Desktop: icon + text */}
               <Link
                 href="/login"
-                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-[var(--p1-glow)]"
+                className="hidden sm:inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground transition hover:bg-accent hover:shadow-(--p1-glow)"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Login</span>
