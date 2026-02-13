@@ -1,12 +1,10 @@
-// /app/(auth)/login/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signInWithEmail } from "../../../lib/auth";
 import Image from "next/image";
-import { ArrowRight, LogIn } from "lucide-react";
+import { ArrowRight, KeyRound } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 function GlowBackdrop() {
   return (
@@ -27,27 +25,74 @@ function GlowBackdrop() {
   );
 }
 
-export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
+
+  // Supabase sets a recovery session when landing here from the email link.
+  // We don't need to parse tokens manually; just ensure the user is in a valid session.
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+
+      // If no session, user likely opened page directly.
+      if (!data.session) {
+        setMsg("This reset link is invalid or has expired. Please request a new one.");
+        setOk(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setMsg(null);
+    setOk(false);
 
-    const { error } = await signInWithEmail(email, password);
-
-    if (error) {
-      setMsg(error.message);
-      setLoading(false);
+    if (password.length < 8) {
+      setMsg("Password must be at least 8 characters.");
+      return;
+    }
+    
+    // Uppercase, lowercase, and number check
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+      setMsg("Password must include uppercase, lowercase, and a number.");
       return;
     }
 
-    router.push("/leaderboard");
+    if (password !== confirm) {
+      setMsg("Passwords do not match.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+
+      if (error) {
+        setMsg(error.message);
+        setOk(false);
+        return;
+      }
+
+      setOk(true);
+      setMsg("Password updated. You can now sign in.");
+    } catch (e: any) {
+      setMsg(e?.message ?? "Failed to update password.");
+      setOk(false);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -57,10 +102,11 @@ export default function LoginPage() {
       <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <div className="mx-auto max-w-md">
           <div className="flex items-center gap-3">
+
             <div className="min-w-0">
-              <div className="text-sm text-muted-foreground">Welcome back</div>
+              <div className="text-sm text-muted-foreground">Finalize reset</div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-                Sign in
+                Set a new password
               </h1>
             </div>
           </div>
@@ -69,23 +115,7 @@ export default function LoginPage() {
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground">
-                  Email
-                </label>
-                <input
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
-                             focus-visible:ring-2 focus-visible:ring-ring"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground">
-                  Password
+                  New password
                 </label>
                 <input
                   className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
@@ -94,13 +124,36 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground">
+                  Confirm new password
+                </label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
+                             focus-visible:ring-2 focus-visible:ring-ring"
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Re-enter password"
                 />
               </div>
 
               {msg ? (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                <div
+                  className={[
+                    "rounded-xl border px-4 py-3 text-sm",
+                    ok
+                      ? "border-border bg-background text-foreground"
+                      : "border-destructive/30 bg-destructive/10 text-foreground",
+                  ].join(" ")}
+                >
                   {msg}
                 </div>
               ) : null}
@@ -115,25 +168,23 @@ export default function LoginPage() {
                 ].join(" ")}
                 style={!loading ? { boxShadow: "var(--p1-glow)" } : undefined}
               >
-                <LogIn className="h-4 w-4" />
-                {loading ? "Signing in..." : "Sign in"}
+                <KeyRound className="h-4 w-4" />
+                {loading ? "Updating..." : "Update password"}
               </button>
             </form>
 
-            <div className="text-right pb-0 mt-1">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-primary hover:opacity-90"
-              >
-                Forgot password?
+            <div className="mt-5 text-sm text-muted-foreground">
+              <Link className="text-primary font-semibold hover:opacity-90" href="/login">
+                Go to sign in <ArrowRight className="inline h-4 w-4" />
               </Link>
             </div>
 
-            <div className="mt-5 text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link className="text-primary font-semibold hover:opacity-90" href="/signup">
-                Create one <ArrowRight className="inline h-4 w-4" />
+            <div className="mt-3 text-xs text-muted-foreground">
+              If you opened this page directly, request a new link from{" "}
+              <Link className="text-primary font-semibold hover:opacity-90" href="/forgot-password">
+                Forgot password
               </Link>
+              .
             </div>
           </div>
         </div>

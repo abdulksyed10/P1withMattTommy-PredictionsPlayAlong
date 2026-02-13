@@ -1,12 +1,10 @@
-// /app/(auth)/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { signInWithEmail } from "../../../lib/auth";
 import Image from "next/image";
-import { ArrowRight, LogIn } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
 
 function GlowBackdrop() {
   return (
@@ -27,27 +25,38 @@ function GlowBackdrop() {
   );
 }
 
-export default function LoginPage() {
-  const router = useRouter();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setMsg(null);
+    setOk(false);
 
-    const { error } = await signInWithEmail(email, password);
+    try {
+      const origin =
+        typeof window !== "undefined" ? window.location.origin : "";
 
-    if (error) {
-      setMsg(error.message);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${origin}/reset-password`,
+      });
+
+      if (error) {
+        setMsg(error.message);
+        return;
+      }
+
+      setOk(true);
+      setMsg("If an account exists for that email, a reset link has been sent.");
+    } catch (e: any) {
+      setMsg(e?.message ?? "Failed to send reset email.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    router.push("/leaderboard");
   }
 
   return (
@@ -57,16 +66,21 @@ export default function LoginPage() {
       <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
         <div className="mx-auto max-w-md">
           <div className="flex items-center gap-3">
+            
             <div className="min-w-0">
-              <div className="text-sm text-muted-foreground">Welcome back</div>
+              <div className="text-sm text-muted-foreground">Account help</div>
               <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-                Sign in
+                Reset your password
               </h1>
             </div>
           </div>
 
           <div className="mt-6 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm">
-            <form onSubmit={onSubmit} className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Enter your email and we’ll send you a password reset link.
+            </p>
+
+            <form onSubmit={onSubmit} className="mt-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground">
                   Email
@@ -83,24 +97,15 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground">
-                  Password
-                </label>
-                <input
-                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
-                             focus-visible:ring-2 focus-visible:ring-ring"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                />
-              </div>
-
               {msg ? (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                <div
+                  className={[
+                    "rounded-xl border px-4 py-3 text-sm",
+                    ok
+                      ? "border-border bg-background text-foreground"
+                      : "border-destructive/30 bg-destructive/10 text-foreground",
+                  ].join(" ")}
+                >
                   {msg}
                 </div>
               ) : null}
@@ -115,25 +120,19 @@ export default function LoginPage() {
                 ].join(" ")}
                 style={!loading ? { boxShadow: "var(--p1-glow)" } : undefined}
               >
-                <LogIn className="h-4 w-4" />
-                {loading ? "Signing in..." : "Sign in"}
+                <Mail className="h-4 w-4" />
+                {loading ? "Sending..." : "Send reset link"}
               </button>
             </form>
 
-            <div className="text-right pb-0 mt-1">
-              <Link
-                href="/forgot-password"
-                className="text-xs text-primary hover:opacity-90"
-              >
-                Forgot password?
+            <div className="mt-5 text-sm text-muted-foreground">
+              <Link className="text-primary font-semibold hover:opacity-90" href="/login">
+                Back to sign in <ArrowRight className="inline h-4 w-4" />
               </Link>
             </div>
 
-            <div className="mt-5 text-sm text-muted-foreground">
-              Don&apos;t have an account?{" "}
-              <Link className="text-primary font-semibold hover:opacity-90" href="/signup">
-                Create one <ArrowRight className="inline h-4 w-4" />
-              </Link>
+            <div className="mt-3 text-xs text-muted-foreground">
+              Tip: check spam/junk if you don’t see the email.
             </div>
           </div>
         </div>
