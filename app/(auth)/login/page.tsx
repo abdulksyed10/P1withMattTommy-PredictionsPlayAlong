@@ -1,9 +1,31 @@
+// /app/(auth)/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signInWithEmail } from "../../../lib/auth";
+import Image from "next/image";
+import { ArrowRight, LogIn } from "lucide-react";
+
+function GlowBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0 opacity-60" aria-hidden="true">
+      <div
+        className="absolute -top-24 left-1/2 h-105 w-[420px] -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.16 }}
+      />
+      <div
+        className="absolute top-40 right-[-120px] h-[360px] w-[360px] rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.12 }}
+      />
+      <div
+        className="absolute bottom-[-160px] left-[-160px] h-[420px] w-[420px] rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.10 }}
+      />
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,51 +51,92 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-3xl font-bold">Sign in</h1>
+    <main className="relative min-h-[calc(100vh-112px)] md:min-h-[calc(100vh-64px)] bg-background text-foreground">
+      <GlowBackdrop />
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="block text-sm text-white/70">Email</label>
-            <input
-              className="mt-1 w-full rounded-lg bg-white/5 px-3 py-2 outline-none ring-1 ring-white/10 focus:ring-white/30"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+      <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <div className="mx-auto max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <div className="text-sm text-muted-foreground">Welcome back</div>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+                Sign in
+              </h1>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm text-white/70">Password</label>
-            <input
-              className="mt-1 w-full rounded-lg bg-white/5 px-3 py-2 outline-none ring-1 ring-white/10 focus:ring-white/30"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+          <div className="mt-6 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm">
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground">
+                  Email
+                </label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
+                             focus-visible:ring-2 focus-visible:ring-ring"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground">
+                  Password
+                </label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
+                             focus-visible:ring-2 focus-visible:ring-ring"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              {msg ? (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                  {msg}
+                </div>
+              ) : null}
+
+              <button
+                disabled={loading}
+                className={[
+                  "w-full inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition",
+                  loading
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-primary-foreground hover:opacity-95",
+                ].join(" ")}
+                style={!loading ? { boxShadow: "var(--p1-glow)" } : undefined}
+              >
+                <LogIn className="h-4 w-4" />
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+
+            <div className="text-right pb-0 mt-1">
+              <Link
+                href="/reset-password"
+                className="text-xs text-primary hover:opacity-90"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
+            <div className="mt-5 text-sm text-muted-foreground">
+              Don&apos;t have an account?{" "}
+              <Link className="text-primary font-semibold hover:opacity-90" href="/signup">
+                Create one <ArrowRight className="inline h-4 w-4" />
+              </Link>
+            </div>
           </div>
-
-          <button
-            disabled={loading}
-            className="w-full rounded-lg bg-white px-4 py-2 font-medium text-black hover:bg-white/90 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        {msg && <p className="mt-4 text-sm text-white/70">{msg}</p>}
-
-        <p className="mt-6 text-sm text-white/60">
-          Don&apos;t have an account?{" "}
-          <Link className="underline" href="/signup">
-            Create one
-          </Link>
-        </p>
+        </div>
       </div>
     </main>
   );
