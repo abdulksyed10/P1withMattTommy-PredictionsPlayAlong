@@ -33,15 +33,15 @@ function GlowBackdrop() {
       aria-hidden="true"
     >
       <div
-        className="absolute -top-24 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full blur-3xl"
+        className="absolute -top-24 left-1/2 h-105 w-105 -translate-x-1/2 rounded-full blur-3xl"
         style={{ background: "var(--p1-gradient)", opacity: 0.18 }}
       />
       <div
-        className="absolute top-48 right-[-120px] h-[360px] w-[360px] rounded-full blur-3xl"
+        className="absolute top-48 -right-30 h-90 w-90 rounded-full blur-3xl"
         style={{ background: "var(--p1-gradient)", opacity: 0.12 }}
       />
       <div
-        className="absolute bottom-[-160px] left-[-160px] h-[420px] w-[420px] rounded-full blur-3xl"
+        className="absolute -bottom-40 -left-40 h-105 w-105 rounded-full blur-3xl"
         style={{ background: "var(--p1-gradient)", opacity: 0.10 }}
       />
     </div>
@@ -148,7 +148,7 @@ export default function Home() {
               <div className="mt-7 rounded-2xl border border-border bg-card/70 p-4">
                 <div className="text-sm font-semibold">P1 with Matt &amp; Tommy</div>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This fan project is built for the P1 community. Follow the official P1 channels here:
+                  This fan project is built for the P1 with Matt & Tommy community. Follow the official P1 channels here:
                 </p>
 
                 <div className="mt-3 flex flex-wrap gap-2">
