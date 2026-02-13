@@ -169,6 +169,8 @@ export default function PredictPage() {
 
   const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
 
+  const [authed, setAuthed] = useState<boolean | null>(null);
+
   // expanded sections
   const [openKey, setOpenKey] = useState<"good" | "flop" | "pole_position" | "p3" | "p2" | "win" | null>("good");
 
@@ -191,6 +193,10 @@ export default function PredictPage() {
       try {
         setLoading(true);
         setErr(null);
+
+        // Auth state (for the disclaimer banner)
+        const { data: userData } = await supabase.auth.getUser();
+        if (mounted) setAuthed(!!userData.user);
 
         const today = new Date().toISOString().slice(0, 10);
 
@@ -244,10 +250,15 @@ export default function PredictPage() {
       }
     }
 
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setAuthed(!!session?.user);
+    });
+
     run();
 
     return () => {
       mounted = false;
+      sub.subscription.unsubscribe();
     };
   }, []);
 
@@ -605,12 +616,21 @@ export default function PredictPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
+      {authed === false ? (
+        <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
+          <span className="font-semibold">Login required:</span> You can explore the prediction form, but you must{" "}
+          <a href="/login" className="text-primary font-semibold hover:opacity-90 underline underline-offset-4">
+            sign in
+          </a>{" "}
+          to submit predictions.
+        </div>
+      ) : null}
+
       <div className="flex items-start justify-between gap-4 mb-6">
         <SectionHeader
           title="Predictions"
           subtitle="Submit before Practice 1. First race week is standard (no sprint)."
         />
-
         <div className="text-right shrink-0">
           <div className="text-xs text-muted-foreground">Predicting for</div>
           <div className="text-sm font-semibold">
