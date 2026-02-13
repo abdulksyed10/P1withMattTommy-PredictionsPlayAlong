@@ -150,21 +150,34 @@ export default function AccountPage() {
     setOk(false);
 
     try {
-      const res = await fetch("/api/account/delete", { method: "POST" });
+      const { data: sessionData, error: sessionErr } = await supabase.auth.getSession();
+      if (sessionErr) {
+        setMsg(sessionErr.message);
+        return;
+      }
+
+      const token = sessionData.session?.access_token;
+      if (!token) {
+        setMsg("You must be logged in to delete your account.");
+        return;
+      }
+
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         setMsg(json?.error ?? "Failed to delete account.");
-        setOk(false);
         return;
       }
 
-      // user is deleted on server; sign out locally
       await supabase.auth.signOut();
       router.push("/");
     } catch (e: any) {
       setMsg(e?.message ?? "Failed to delete account.");
-      setOk(false);
     } finally {
       setDeleting(false);
       setDeleteOpen(false);
