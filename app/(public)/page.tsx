@@ -12,6 +12,7 @@
 // /app/page.tsx
 import Link from "next/link";
 import { ArrowRight, Sparkles, Trophy, ShieldCheck, Youtube, Instagram, Twitter, Twitch } from "lucide-react";
+import CopyEmailButton from "@/components/CopyEmailButton";
 
 const P1_LINKS = {
   youtube: "https://www.youtube.com/@mattp1tommy",
@@ -82,8 +83,9 @@ function Card({
 }
 
 export default function Home() {
+
   return (
-    <main className="relative bg-background text-foreground">
+    <main className="relative overflow-hidden bg-background text-foreground">
       <GlowBackdrop />
 
       {/* HERO */}
@@ -273,14 +275,12 @@ export default function Home() {
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <a
-                  href={`mailto:${CREATOR_CONTACT.email}`}
+                <CopyEmailButton
+                  email={CREATOR_CONTACT.email}
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-95"
                   style={{ boxShadow: "var(--p1-glow)" }}
-                >
-                  Contact me
-                  <ArrowRight className="h-4 w-4" />
-                </a>
+                  label="Contact me"
+                />
 
                 <a
                   href={CREATOR_CONTACT.website}

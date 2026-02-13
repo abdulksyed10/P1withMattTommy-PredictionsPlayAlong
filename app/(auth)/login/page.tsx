@@ -51,7 +51,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-[calc(100vh-112px)] md:min-h-[calc(100vh-64px)] bg-background text-foreground">
+    <main className="relative overflow-hidden min-h-[calc(100vh-112px)] md:min-h-[calc(100vh-64px)] bg-background text-foreground">
       <GlowBackdrop />
 
       <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
