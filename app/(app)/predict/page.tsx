@@ -274,6 +274,12 @@ export default function PredictPage() {
     return t ? `${t.name} (${t.code})` : "Team selected";
   }
 
+  function driverLabel(id: string | null) {
+    if (!id) return "None";
+    const d = driverById.get(id);
+    return d ? `${d.full_name} (${d.code})` : "Selected";
+  }
+
   function pickKey(p: Pick) {
     if (!p) return null;
     return `${p.kind}:${p.id}`;
@@ -375,6 +381,13 @@ export default function PredictPage() {
       const qidByKey = new Map<string, string>();
       for (const q of questions as any[]) qidByKey.set(q.key, q.id);
 
+      for (const k of QUESTION_KEYS) {
+        if (!qidByKey.get(k)) {
+          alert(`Missing question in DB for key: ${k}`);
+          return;
+        }
+      }
+
       const nowIso = new Date().toISOString();
 
       // 5) upsert prediction_set
@@ -409,7 +422,6 @@ export default function PredictPage() {
           answer_team_id: goodSurprise?.kind === "team" ? goodSurprise.id : null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
         {
           prediction_set_id: predictionSetId,
@@ -418,7 +430,6 @@ export default function PredictPage() {
           answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
         {
           prediction_set_id: predictionSetId,
@@ -427,7 +438,6 @@ export default function PredictPage() {
           answer_team_id: null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
         {
           prediction_set_id: predictionSetId,
@@ -436,7 +446,6 @@ export default function PredictPage() {
           answer_team_id: null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
         {
           prediction_set_id: predictionSetId,
@@ -445,7 +454,6 @@ export default function PredictPage() {
           answer_team_id: null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
         {
           prediction_set_id: predictionSetId,
@@ -454,7 +462,6 @@ export default function PredictPage() {
           answer_team_id: null,
           answer_int: null,
           answer_text: null,
-          updated_at: nowIso,
         },
       ];
 
@@ -702,15 +709,28 @@ export default function PredictPage() {
       {/* Sticky submit bar */}
       <div className="fixed bottom-0 left-0 right-0 border-t bg-background/90 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-4 flex items-center gap-3">
-          <div className="text-sm text-muted-foreground min-w-0">
-            <div className="truncate">
-              Good Surprise:{" "}
-              <span className="text-foreground">{pickLabel(goodSurprise)}</span>
+          {/* <div className="text-sm text-muted-foreground min-w-0 space-y-1">
+            <div className="hidden sm:block space-y-1">
+              <div className="truncate">
+                Good Surprise: <span className="text-foreground">{pickLabel(goodSurprise)}</span>
+              </div>
+              <div className="truncate">
+                Big Flop: <span className="text-foreground">{pickLabel(bigFlop)}</span>
+              </div>
+              <div className="truncate">
+                Pole Position: <span className="text-foreground">{driverLabel(pole_position)}</span>
+              </div>
+              <div className="truncate">
+                Race Winner (P1): <span className="text-foreground">{driverLabel(winner)}</span>
+              </div>
+              <div className="truncate">
+                P2: <span className="text-foreground">{driverLabel(p2)}</span>
+              </div>
+              <div className="truncate">
+                P3: <span className="text-foreground">{driverLabel(p3)}</span>
+              </div>
             </div>
-            <div className="truncate">
-              Big Flop: <span className="text-foreground">{pickLabel(bigFlop)}</span>
-            </div>
-          </div>
+          </div> */}
 
           <div className="ml-auto flex items-center gap-3">
             <button
