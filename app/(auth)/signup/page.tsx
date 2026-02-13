@@ -1,9 +1,31 @@
+// /app/(auth)/signup/page.tsx
 "use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import { signUpWithEmail } from "../../../lib/auth";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { ArrowRight, UserPlus } from "lucide-react";
+import { signUpWithEmail } from "../../../lib/auth";
+
+function GlowBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0 opacity-60" aria-hidden="true">
+      <div
+        className="absolute -top-24 left-1/2 h-105 w-105 -translate-x-1/2 rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.16 }}
+      />
+      <div
+        className="absolute top-40 -right-30 h-90 w-90 rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.12 }}
+      />
+      <div
+        className="absolute -bottom-40 -left-40 h-105 w-105 rounded-full blur-3xl"
+        style={{ background: "var(--p1-gradient)", opacity: 0.10 }}
+      />
+    </div>
+  );
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -17,6 +39,27 @@ export default function SignupPage() {
     setLoading(true);
     setMsg(null);
 
+    // 1) Validate BEFORE signup
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setMsg("Please enter a valid email address.");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setMsg("Password must be at least 8 characters.");
+      setLoading(false);
+      return;
+    }
+
+    // Uppercase, lowercase, and number check
+    if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password)) {
+      setMsg("Password must include uppercase, lowercase, and a number.");
+      setLoading(false);
+      return;
+    }
+
+    // 2) Only call signup if valid
     const { data, error } = await signUpWithEmail(email, password);
 
     if (error) {
@@ -25,65 +68,94 @@ export default function SignupPage() {
       return;
     }
 
-    // If email confirmation is OFF, user is already signed in
+    // If email confirmation is OFF, user is already signed in.
     if (data.session) {
-      router.push("/leaderboard");
+      router.push("/account");
       return;
     }
 
-    setMsg(
-      "Account created. Check your email for a confirmation link (if email confirmations are enabled)."
-    );
+    setMsg("Account created. Check your email for a confirmation link (if enabled).");
     setLoading(false);
   }
 
   return (
-    <main className="min-h-screen bg-black text-white">
-      <div className="mx-auto max-w-md px-6 py-16">
-        <h1 className="text-3xl font-bold">Create account</h1>
+    <main className="relative min-h-[calc(100vh-112px)] md:min-h-[calc(100vh-64px)] bg-background text-foreground">
+      <GlowBackdrop />
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div>
-            <label className="block text-sm text-white/70">Email</label>
-            <input
-              className="mt-1 w-full rounded-lg bg-white/5 px-3 py-2 outline-none ring-1 ring-white/10 focus:ring-white/30"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-            />
+      <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+        <div className="mx-auto max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0">
+              <div className="text-sm text-muted-foreground">Join the grid</div>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
+                Create account
+              </h1>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm text-white/70">Password</label>
-            <input
-              className="mt-1 w-full rounded-lg bg-white/5 px-3 py-2 outline-none ring-1 ring-white/10 focus:ring-white/30"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-            />
+          <div className="mt-6 rounded-2xl border border-border bg-card p-5 md:p-6 shadow-sm">
+            <form onSubmit={onSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground">Email</label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
+                             focus-visible:ring-2 focus-visible:ring-ring"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground">Password</label>
+                <input
+                  className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none
+                             focus-visible:ring-2 focus-visible:ring-ring"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters, uppercase, lowercase, number"
+                />
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Use a strong password. You’ll set your display name next.
+                </div>
+              </div>
+
+              {msg ? (
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-foreground">
+                  {msg}
+                </div>
+              ) : null}
+
+              <button
+                disabled={loading}
+                className={[
+                  "w-full inline-flex items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold transition",
+                  loading
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-primary-foreground hover:opacity-95",
+                ].join(" ")}
+                style={!loading ? { boxShadow: "var(--p1-glow)" } : undefined}
+              >
+                <UserPlus className="h-4 w-4" />
+                {loading ? "Creating..." : "Create account"}
+              </button>
+            </form>
+
+            <div className="mt-5 text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link className="text-primary font-semibold hover:opacity-90" href="/login">
+                Sign in <ArrowRight className="inline h-4 w-4" />
+              </Link>
+            </div>
           </div>
-
-          <button
-            disabled={loading}
-            className="w-full rounded-lg bg-white px-4 py-2 font-medium text-black hover:bg-white/90 disabled:opacity-50"
-          >
-            {loading ? "Creating..." : "Create account"}
-          </button>
-        </form>
-
-        {msg && <p className="mt-4 text-sm text-white/70">{msg}</p>}
-
-        <p className="mt-6 text-sm text-white/60">
-          Already have an account?{" "}
-          <Link className="underline" href="/login">
-            Sign in
-          </Link>
-        </p>
+        </div>
       </div>
     </main>
   );

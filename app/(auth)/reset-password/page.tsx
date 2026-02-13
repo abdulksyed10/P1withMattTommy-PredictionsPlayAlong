@@ -125,7 +125,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="new-password"
-                  placeholder="At least 8 characters"
+                  placeholder="At least 8 characters, uppercase, lowercase, number"
                 />
               </div>
 
