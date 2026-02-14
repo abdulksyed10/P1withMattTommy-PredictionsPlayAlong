@@ -32,8 +32,9 @@ export function ThemeToggle() {
       setThemeState(stored);
     } else {
       // DEFAULT TO LIGHT
-      setTheme("light");
-      setThemeState("light");
+      const systemTheme = getTheme();
+      setTheme(systemTheme);
+      setThemeState(systemTheme);
     }
   }, []);
 
