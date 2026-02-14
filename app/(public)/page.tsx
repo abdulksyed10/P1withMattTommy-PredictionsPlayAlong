@@ -118,6 +118,9 @@ export default function Home() {
               <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
                 A play-along predictions game for the P1 with Matt & Tommy community.
                 Lock in picks before FP1, earn points after each race, and climb the leaderboard.
+                <span className="block mt-2 text-xs">
+                  Play for fun, no money involved, just bragging rights and a chance to show off your F1 knowledge!
+                </span>
               </p>
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -226,7 +229,7 @@ export default function Home() {
                 <div className="mt-5">
                   <Link
                     href="/signup"
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground hover:opacity-95"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-border bg-primary px-4 py-3 text-sm font-semibold text-accent-foreground hover:opacity-95"
                     style={{ boxShadow: "var(--p1-glow)" }}
                   >
                     Create an account

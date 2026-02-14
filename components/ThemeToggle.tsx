@@ -6,9 +6,9 @@ import { Moon, Sun } from "lucide-react";
 
 type Theme = "light" | "dark";
 
-function getTheme(): Theme {
-  if (typeof document === "undefined") return "light";
-  return document.documentElement.classList.contains("dark")
+function getSystemTheme(): Theme {
+  if (typeof window === "undefined") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
     : "light";
 }
@@ -32,7 +32,7 @@ export function ThemeToggle() {
       setThemeState(stored);
     } else {
       // DEFAULT TO LIGHT
-      const systemTheme = getTheme();
+      const systemTheme = getSystemTheme();
       setTheme(systemTheme);
       setThemeState(systemTheme);
     }
