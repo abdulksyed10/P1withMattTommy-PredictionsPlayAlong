@@ -1,6 +1,7 @@
 /* /app/globals.css (or /styles/globals.css depending on your project) */
 @import "tailwindcss";
 @import "./theme.css";
+@tailwind utilities;
 
 /* Map your HSL tokens to Tailwind v4 theme tokens (so bg-background, text-foreground, etc. work) */
 @theme inline {

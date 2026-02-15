@@ -2,7 +2,6 @@
 "use client";
 
 import Image from "next/image";
-import { CheckCircle2 } from "lucide-react";
 import { initials } from "./utils";
 
 export default function Tile({
@@ -54,20 +53,14 @@ export default function Tile({
         </div>
 
         <div className="min-w-0">
-          <div className="font-semibold leading-tight truncate">{title}</div>
+          <div className="font-semibold leading-tight line-clamp-2">{title}</div>
+
+          {/* Hide on small screens to reduce tile height */}
           {subtitle ? (
-            <div className="text-xs text-muted-foreground truncate mt-0.5">
+            <div className="hidden sm:block text-xs text-muted-foreground truncate mt-0.5">
               {subtitle}
             </div>
           ) : null}
-        </div>
-
-        <div className="ml-auto">
-          {selected ? (
-            <CheckCircle2 className="h-5 w-5 text-primary" />
-          ) : (
-            <div className="h-5 w-5 rounded-full border border-muted-foreground/30 group-hover:border-primary/40" />
-          )}
         </div>
       </div>
     </button>

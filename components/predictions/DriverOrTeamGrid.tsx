@@ -13,6 +13,7 @@ export default function DriverOrTeamGrid({
   onChange,
   tab,
   onTabChange,
+  onPicked,
   size = "lg",
 }: {
   drivers: DriverRow[];
@@ -21,6 +22,7 @@ export default function DriverOrTeamGrid({
   onChange: (p: Pick) => void;
   tab: "drivers" | "teams";
   onTabChange: (t: "drivers" | "teams") => void;
+  onPicked?: () => void;
   size?: "md" | "lg";
 }) {
   return (
@@ -32,7 +34,7 @@ export default function DriverOrTeamGrid({
       </div>
 
       {tab === "drivers" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {drivers.map((d) => (
             <Tile
               key={`d-${d.id}`}
@@ -40,13 +42,16 @@ export default function DriverOrTeamGrid({
               subtitle={`Driver • ${d.code}`}
               imgSrc={safeImg(`/images/drivers/${d.code}.png`)}
               selected={value?.kind === "driver" && value.id === d.id}
-              onClick={() => onChange({ kind: "driver", id: d.id })}
+              onClick={() => {
+                onChange({ kind: "driver", id: d.id });
+                onPicked?.();
+            }}
               size={size}
             />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {teams.map((t) => (
             <Tile
               key={`t-${t.id}`}
@@ -54,7 +59,10 @@ export default function DriverOrTeamGrid({
               subtitle={`Team • ${t.code}`}
               imgSrc={safeImg(`/images/teams/${t.code}.png`)}
               selected={value?.kind === "team" && value.id === t.id}
-              onClick={() => onChange({ kind: "team", id: t.id })}
+              onClick={() => {
+                onChange({ kind: "team", id: t.id });
+                onPicked?.();
+            }}
               size={size}
             />
           ))}
