@@ -107,6 +107,11 @@ export function Navbar() {
             icon={<Flag className="h-4 w-4" />}
           />
           <NavLink
+            href="/season-prediction"
+            label="Season Predictions"
+            icon={<Flag className="h-4 w-4" />}
+          />
+          <NavLink
             href="/leaderboard"
             label="Leaderboard"
             icon={<Trophy className="h-4 w-4" />}
@@ -178,6 +183,11 @@ export function Navbar() {
           <NavLink
             href="/predict"
             label="Predict"
+            icon={<Flag className="h-4 w-4" />}
+          />
+          <NavLink
+            href="/season-prediction"
+            label="Season Predictions"
             icon={<Flag className="h-4 w-4" />}
           />
           <NavLink
