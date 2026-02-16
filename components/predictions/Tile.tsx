@@ -28,10 +28,18 @@ export default function Tile({
       className={[
         "group relative w-full rounded-xl border p-3 text-left transition",
         "hover:border-primary/40 hover:bg-accent/40",
-        selected ? "border-primary bg-accent/60" : "border-border bg-background",
+        selected
+          ? "border-primary ring-2 ring-primary bg-primary/10 shadow-[0_0_0_1px_rgba(168,85,247,0.35)]"
+          : "border-border bg-background",
       ].join(" ")}
       aria-pressed={selected}
     >
+      {selected && (
+        <div className="absolute right-2 top-2 rounded-full bg-primary text-primary-foreground px-2 py-0.5 text-[10px] font-semibold tracking-wide">
+          ✓
+        </div>
+      )}
+      
       <div className="flex items-center gap-3">
         <div
           className="relative shrink-0 rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
