@@ -1,7 +1,7 @@
 // /app/(app)/predict/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 import SectionHeader from "@/components/predictions/SectionHeader";
@@ -36,6 +36,36 @@ export default function PredictPage() {
   // tab state for driver/team questions (buttons)
   const [goodTab, setGoodTab] = useState<"drivers" | "teams">("drivers");
   const [flopTab, setFlopTab] = useState<"drivers" | "teams">("drivers");
+
+  const cardRefs = useRef<
+    Record<NonNullable<typeof openKey>, HTMLDivElement | null>
+  >({
+    good: null,
+    flop: null,
+    pole_position: null,
+    p3: null,
+    p2: null,
+    win: null,
+  });
+
+  function scrollToCard(key: NonNullable<typeof openKey>) {
+    const el = cardRefs.current[key];
+    if (!el) return;
+
+    const headerEl = document.querySelector("[data-fixed-header]") as HTMLElement | null;
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+
+    const EXTRA_GAP = 12;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerH - EXTRA_GAP;
+
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    if (!openKey) return;
+    const id = window.setTimeout(() => scrollToCard(openKey), 0);
+    return () => window.clearTimeout(id);
+  }, [openKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -203,167 +233,181 @@ function willConflictPodium(nextWinner: string | null, nextP2: string | null, ne
   return new Set(ids).size !== ids.length;
 }
 
-  async function handleSubmit() {
-    if (submitting) return;
+function openAndScrollPodiumFocus(preferred?: "p3" | "p2" | "win") {
+  const k: "p3" | "p2" | "win" =
+    preferred ?? (openKey === "win" || openKey === "p2" || openKey === "p3" ? openKey : "win");
+  setOpenKey(k);
+  window.setTimeout(() => scrollToCard(k), 0);
+}
 
-    try {
-      setSubmitting(true);
+async function handleSubmit() {
+  if (submitting) return;
 
-      // 0) must be logged in
-      const {
-        data: { user },
-        error: userErr,
-      } = await supabase.auth.getUser();
+  try {
+    setSubmitting(true);
 
-      if (userErr || !user) {
-        alert("You must be logged in to submit predictions.");
+    // 0) must be logged in
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser();
+
+    if (userErr || !user) {
+      alert("You must be logged in to submit predictions.");
+      return;
+    }
+
+    // 1) validate good surprise, flop, and podium uniqueness
+    if (surpriseFlopError) {
+      const k = openKey === "flop" ? "flop" : "good";
+      setOpenKey(k);
+      window.setTimeout(() => scrollToCard(k), 0);
+      alert(surpriseFlopError);
+      return;
+    }
+    if (podiumError) {
+      openAndScrollPodiumFocus();
+      alert(podiumError);
+      return;
+    }
+
+    const missing: string[] = [];
+    if (!goodSurprise) missing.push("Good Surprise");
+    if (!bigFlop) missing.push("Big Flop");
+    if (!pole_position) missing.push("Pole Position");
+    if (!p3) missing.push("P3");
+    if (!p2) missing.push("P2");
+    if (!winner) missing.push("Race Winner");
+
+    if (missing.length) {
+      alert(`Missing: ${missing.join(", ")}`);
+      return;
+    }
+
+    // 2) determine race (next upcoming race in active season)
+    if (!currentRace?.id) {
+      alert("No upcoming race found in active season.");
+      return;
+    }
+    const raceId = currentRace.id;
+
+    // 3) lock check via FP1
+    const { data: fp1, error: fp1Err } = await supabase
+      .from("race_sessions")
+      .select("starts_at")
+      .eq("race_id", raceId)
+      .eq("session", "fp1")
+      .maybeSingle();
+
+    if (fp1Err || !fp1?.starts_at) {
+      alert(fp1Err?.message ?? "FP1 starts_at not configured for this race.");
+      return;
+    }
+
+    if (Date.now() >= new Date(fp1.starts_at).getTime()) {
+      alert("Predictions are locked (FP1 has started).");
+      return;
+    }
+
+    // 4) fetch question IDs by key
+    const QUESTION_KEYS = ["good_surprise", "big_flop", "pole_position", "p3", "p2", "p1_winner"] as const;
+
+    const { data: questions, error: qErr } = await supabase
+      .from("questions")
+      .select("id, key")
+      .in("key", [...QUESTION_KEYS]);
+
+    if (qErr || !questions || questions.length !== QUESTION_KEYS.length) {
+      alert(qErr?.message ?? "Questions missing. Check questions.key values.");
+      return;
+    }
+
+    const qidByKey = new Map<string, string>();
+    for (const q of questions as any[]) qidByKey.set(q.key, q.id);
+
+    for (const k of QUESTION_KEYS) {
+      if (!qidByKey.get(k)) {
+        alert(`Missing question in DB for key: ${k}`);
         return;
       }
+    }
 
-      // 1) validate podium uniqueness
-      const podium = [winner, p2, p3].filter(Boolean) as string[];
-      if (new Set(podium).size !== podium.length) {
-        alert("Winner, P2, and P3 must be different drivers.");
-        return;
-      }
+    const nowIso = new Date().toISOString();
 
-      const missing: string[] = [];
-      if (!goodSurprise) missing.push("Good Surprise");
-      if (!bigFlop) missing.push("Big Flop");
-      if (!pole_position) missing.push("Pole Position");
-      if (!p3) missing.push("P3");
-      if (!p2) missing.push("P2");
-      if (!winner) missing.push("Race Winner");
-
-      if (missing.length) {
-        alert(`Missing: ${missing.join(", ")}`);
-        return;
-      }
-
-      // 2) determine race (next upcoming race in active season)
-      if (!currentRace?.id) {
-        alert("No upcoming race found in active season.");
-        return;
-      }
-      const raceId = currentRace.id;
-
-      // 3) lock check via FP1
-      const { data: fp1, error: fp1Err } = await supabase
-        .from("race_sessions")
-        .select("starts_at")
-        .eq("race_id", raceId)
-        .eq("session", "fp1")
-        .maybeSingle();
-
-      if (fp1Err || !fp1?.starts_at) {
-        alert(fp1Err?.message ?? "FP1 starts_at not configured for this race.");
-        return;
-      }
-
-      if (Date.now() >= new Date(fp1.starts_at).getTime()) {
-        alert("Predictions are locked (FP1 has started).");
-        return;
-      }
-
-      // 4) fetch question IDs by key
-      const QUESTION_KEYS = ["good_surprise", "big_flop", "pole_position", "p3", "p2", "p1_winner"] as const;
-
-      const { data: questions, error: qErr } = await supabase
-        .from("questions")
-        .select("id, key")
-        .in("key", [...QUESTION_KEYS]);
-
-      if (qErr || !questions || questions.length !== QUESTION_KEYS.length) {
-        alert(qErr?.message ?? "Questions missing. Check questions.key values.");
-        return;
-      }
-
-      const qidByKey = new Map<string, string>();
-      for (const q of questions as any[]) qidByKey.set(q.key, q.id);
-
-      for (const k of QUESTION_KEYS) {
-        if (!qidByKey.get(k)) {
-          alert(`Missing question in DB for key: ${k}`);
-          return;
-        }
-      }
-
-      const nowIso = new Date().toISOString();
-
-      // 5) upsert prediction_set
-      const { data: setRow, error: setErr } = await supabase
-        .from("prediction_sets")
-        .upsert(
-          {
-            user_id: user.id,
-            race_id: raceId,
-            status: "submitted",
-            submitted_at: nowIso,
-            updated_at: nowIso,
-          },
-          { onConflict: "user_id,race_id" }
-        )
-        .select("id")
-        .single();
-
-      if (setErr || !setRow) {
-        alert(setErr?.message ?? "Failed to save prediction set.");
-        return;
-      }
-
-      const predictionSetId = setRow.id as string;
-
-      // 6) upsert predictions
-      const rows = [
+    // 5) upsert prediction_set
+    const { data: setRow, error: setErr } = await supabase
+      .from("prediction_sets")
+      .upsert(
         {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("good_surprise"),
-          answer_driver_id: goodSurprise?.kind === "driver" ? goodSurprise.id : null,
-          answer_team_id: goodSurprise?.kind === "team" ? goodSurprise.id : null,
-          answer_int: null,
-          answer_text: null,
+          user_id: user.id,
+          race_id: raceId,
+          status: "submitted",
+          submitted_at: nowIso,
+          updated_at: nowIso,
         },
-        {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("big_flop"),
-          answer_driver_id: bigFlop?.kind === "driver" ? bigFlop.id : null,
-          answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
-          answer_int: null,
-          answer_text: null,
-        },
-        {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("pole_position"),
-          answer_driver_id: pole_position,
-          answer_team_id: null,
-          answer_int: null,
-          answer_text: null,
-        },
-        {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("p3"),
-          answer_driver_id: p3,
-          answer_team_id: null,
-          answer_int: null,
-          answer_text: null,
-        },
-        {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("p2"),
-          answer_driver_id: p2,
-          answer_team_id: null,
-          answer_int: null,
-          answer_text: null,
-        },
-        {
-          prediction_set_id: predictionSetId,
-          question_id: qidByKey.get("p1_winner"),
-          answer_driver_id: winner,
-          answer_team_id: null,
-          answer_int: null,
-          answer_text: null,
-        },
-      ];
+        { onConflict: "user_id,race_id" }
+      )
+      .select("id")
+      .single();
+
+    if (setErr || !setRow) {
+      alert(setErr?.message ?? "Failed to save prediction set.");
+      return;
+    }
+
+    const predictionSetId = setRow.id as string;
+
+    // 6) upsert predictions
+    const rows = [
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("good_surprise"),
+        answer_driver_id: goodSurprise?.kind === "driver" ? goodSurprise.id : null,
+        answer_team_id: goodSurprise?.kind === "team" ? goodSurprise.id : null,
+        answer_int: null,
+        answer_text: null,
+      },
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("big_flop"),
+        answer_driver_id: bigFlop?.kind === "driver" ? bigFlop.id : null,
+        answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
+        answer_int: null,
+        answer_text: null,
+      },
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("pole_position"),
+        answer_driver_id: pole_position,
+        answer_team_id: null,
+        answer_int: null,
+        answer_text: null,
+      },
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("p3"),
+        answer_driver_id: p3,
+        answer_team_id: null,
+        answer_int: null,
+        answer_text: null,
+      },
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("p2"),
+        answer_driver_id: p2,
+        answer_team_id: null,
+        answer_int: null,
+        answer_text: null,
+      },
+      {
+        prediction_set_id: predictionSetId,
+        question_id: qidByKey.get("p1_winner"),
+        answer_driver_id: winner,
+        answer_team_id: null,
+        answer_int: null,
+        answer_text: null,
+      },
+    ];
 
       const { error: predErr } = await supabase
         .from("predictions")
@@ -406,7 +450,7 @@ function willConflictPodium(nextWinner: string | null, nextP2: string | null, ne
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
+    <div className="no-scroll-anchor mx-auto max-w-6xl px-4 py-8 pb-28">
       {authed === false ? (
         <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
           <span className="font-semibold">Login required:</span> You can explore the prediction form, but you must{" "}
@@ -431,141 +475,173 @@ function willConflictPodium(nextWinner: string | null, nextP2: string | null, ne
       </div>
 
       <div className="space-y-4">
-        <QuestionCard
-          title="Good Surprise"
-          description="Pick the driver or team you think will pleasantly outperform expectations."
-          expanded={openKey === "good"}
-          onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
-          summary={pickLabel(goodSurprise)}
-        >
-          {surpriseFlopError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {surpriseFlopError}
-            </div>
-          ) : null}
+        <div ref={(el) => { cardRefs.current.good = el; }}>
+          <QuestionCard
+            title="Good Surprise"
+            description="Pick the driver or team you think will pleasantly outperform expectations."
+            expanded={openKey === "good"}
+            onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
+            summary={pickLabel(goodSurprise)}
+          >
+            {surpriseFlopError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {surpriseFlopError}
+              </div>
+            ) : null}
 
-          <DriverOrTeamGrid
-            drivers={drivers}
-            teams={teams}
-            value={goodSurprise}
-            onChange={(p) => {
-              setGoodSurprise(p);
-              if (!willConflictIfSetGood(p)) advance("good");
-              else setOpenKey("good");
-            }}
-            tab={goodTab}
-            onTabChange={setGoodTab}
-          />
-        </QuestionCard>
+            <DriverOrTeamGrid
+              drivers={drivers}
+              teams={teams}
+              value={goodSurprise}
+              onChange={(p) => {
+                setGoodSurprise(p);
+                if (willConflictIfSetGood(p)) {
+                  setOpenKey("good");
+                  window.setTimeout(() => scrollToCard("good"), 0);
+                  return;
+                }
+                advance("good");
+              }}
+              tab={goodTab}
+              onTabChange={setGoodTab}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Big Flop"
-          description="Pick the driver or team you think will underperform expectations."
-          expanded={openKey === "flop"}
-          onToggle={() => setOpenKey(openKey === "flop" ? "pole_position" : "flop")}
-          summary={pickLabel(bigFlop)}
-        >
-          {surpriseFlopError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {surpriseFlopError}
-            </div>
-          ) : null}
-          
-          <DriverOrTeamGrid
-            drivers={drivers}
-            teams={teams}
-            value={bigFlop}
-            onChange={(p) => {
-              setBigFlop(p);
-              if (!willConflictIfSetFlop(p)) advance("flop");
-              else setOpenKey("flop");
-            }}
-            tab={flopTab}
-            onTabChange={setFlopTab}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.flop = el; }}>
+          <QuestionCard
+            title="Big Flop"
+            description="Pick the driver or team you think will underperform expectations."
+            expanded={openKey === "flop"}
+            onToggle={() => setOpenKey(openKey === "flop" ? "pole_position" : "flop")}
+            summary={pickLabel(bigFlop)}
+          >
+            {surpriseFlopError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {surpriseFlopError}
+              </div>
+            ) : null}
+            
+            <DriverOrTeamGrid
+              drivers={drivers}
+              teams={teams}
+              value={bigFlop}
+              onChange={(p) => {
+                setBigFlop(p);
+                if (willConflictIfSetFlop(p)) {
+                  setOpenKey("flop");
+                  window.setTimeout(() => scrollToCard("flop"), 0);
+                  return;
+                }
+                advance("flop");
+              }}
+              tab={flopTab}
+              onTabChange={setFlopTab}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Race Pole Position"
-          description="Pick the driver who will start from pole position."
-          expanded={openKey === "pole_position"}
-          onToggle={() => setOpenKey(openKey === "pole_position" ? "p3" : "pole_position")}
-          summary={pole_position ? `${driverById.get(pole_position)?.full_name ?? "Selected"}` : "None"}
-        >
-          <DriverGrid drivers={drivers} selectedId={pole_position} onSelect={setPolePosition} onPicked={() => advance("pole_position")} />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.pole_position = el; }}>
+          <QuestionCard
+            title="Race Pole Position"
+            description="Pick the driver who will start from pole position."
+            expanded={openKey === "pole_position"}
+            onToggle={() => setOpenKey(openKey === "pole_position" ? "p3" : "pole_position")}
+            summary={pole_position ? `${driverById.get(pole_position)?.full_name ?? "Selected"}` : "None"}
+          >
+            <DriverGrid drivers={drivers} selectedId={pole_position} onSelect={setPolePosition} onPicked={() => advance("pole_position")} />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Third Position (P3)"
-          description="Pick the driver who will finish P3."
-          expanded={openKey === "p3"}
-          onToggle={() => setOpenKey(openKey === "p3" ? "p2" : "p3")}
-          summary={p3 ? `${driverById.get(p3)?.full_name ?? "Selected"}` : "None"}
-        >
-          {podiumError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {podiumError}
-            </div>
-          ) : null}
-          <DriverGrid 
-            drivers={drivers}
-            selectedId={p3}
-            onSelect={(id) => {
-              setP3(id);
-              const conflict = willConflictPodium(winner, p2, id);
-              if (!conflict) advance("p3");
-              else setOpenKey("p3");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.p3 = el; }}>
+          <QuestionCard
+            title="Third Position (P3)"
+            description="Pick the driver who will finish P3."
+            expanded={openKey === "p3"}
+            onToggle={() => setOpenKey(openKey === "p3" ? "p2" : "p3")}
+            summary={p3 ? `${driverById.get(p3)?.full_name ?? "Selected"}` : "None"}
+          >
+            {podiumError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {podiumError}
+              </div>
+            ) : null}
+            <DriverGrid 
+              drivers={drivers}
+              selectedId={p3}
+              onSelect={(id) => {
+                setP3(id);
+                const conflict = willConflictPodium(winner, p2, id);
+                if (conflict) {
+                  setOpenKey("p3");
+                  window.setTimeout(() => scrollToCard("p3"), 0);
+                  return;
+                }
+                advance("p3");
+              }}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Second Position (P2)"
-          description="Pick the driver who will finish P2."
-          expanded={openKey === "p2"}
-          onToggle={() => setOpenKey(openKey === "p2" ? "win" : "p2")}
-          summary={p2 ? `${driverById.get(p2)?.full_name ?? "Selected"}` : "None"}
-        >
-          {podiumError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {podiumError}
-            </div>
-          ) : null}
-          <DriverGrid 
-            drivers={drivers}
-            selectedId={p2}
-            onSelect={(id) => {
-              setP2(id);
-              const conflict = willConflictPodium(winner, id, p3);
-              if (!conflict) advance("p2");
-              else setOpenKey("p2");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.p2 = el; }}>
+          <QuestionCard
+            title="Second Position (P2)"
+            description="Pick the driver who will finish P2."
+            expanded={openKey === "p2"}
+            onToggle={() => setOpenKey(openKey === "p2" ? "win" : "p2")}
+            summary={p2 ? `${driverById.get(p2)?.full_name ?? "Selected"}` : "None"}
+          >
+            {podiumError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {podiumError}
+              </div>
+            ) : null}
+            <DriverGrid 
+              drivers={drivers}
+              selectedId={p2}
+              onSelect={(id) => {
+                setP2(id);
+                const conflict = willConflictPodium(winner, id, p3);
+                if (conflict) {
+                  setOpenKey("p2");
+                  window.setTimeout(() => scrollToCard("p2"), 0);
+                  return;
+                }
+                advance("p2");
+              }}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Race Winner (P1)"
-          description="Pick the driver who will win the race."
-          expanded={openKey === "win"}
-          onToggle={() => setOpenKey(openKey === "win" ? null : "win")}
-          summary={winner ? `${driverById.get(winner)?.full_name ?? "Selected"}` : "None"}
-        >
-          {podiumError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {podiumError}
-            </div>
-          ) : null}
-          <DriverGrid
-            drivers={drivers}
-            selectedId={winner}
-            onSelect={(id) => {
-              setWinner(id);
-              const conflict = willConflictPodium(id, p2, p3);
-              if (!conflict) advance("win");
-              else setOpenKey("win");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.win = el; }}>
+          <QuestionCard
+            title="Race Winner (P1)"
+            description="Pick the driver who will win the race."
+            expanded={openKey === "win"}
+            onToggle={() => setOpenKey(openKey === "win" ? null : "win")}
+            summary={winner ? `${driverById.get(winner)?.full_name ?? "Selected"}` : "None"}
+          >
+            {podiumError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {podiumError}
+              </div>
+            ) : null}
+            <DriverGrid
+              drivers={drivers}
+              selectedId={winner}
+              onSelect={(id) => {
+                setWinner(id);
+                const conflict = willConflictPodium(id, p2, p3);
+                if (conflict) {
+                  setOpenKey("win");
+                  window.setTimeout(() => scrollToCard("win"), 0);
+                  return;
+                }
+                advance("win");
+              }}
+            />
+          </QuestionCard>
+        </div>
       </div>
 
       {/* Sticky submit bar */}
