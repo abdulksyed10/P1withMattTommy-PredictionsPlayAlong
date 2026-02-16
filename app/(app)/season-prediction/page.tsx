@@ -491,7 +491,7 @@ export default function SeasonPredictionPage() {
             title="Good Surprise"
             description="Pick the driver or team you think will outperform expectations this season."
             expanded={openKey === "good"}
-            onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
+            onToggle={() => setOpenKey(openKey === "good" ? null : "good")}
             summary={pickLabel(goodSurprise)}
           >
             {surpriseFlopError ? (
@@ -525,7 +525,7 @@ export default function SeasonPredictionPage() {
             title="Big Flop"
             description="Pick the driver or team you think will underperform expectations this season."
             expanded={openKey === "flop"}
-            onToggle={() => setOpenKey(openKey === "flop" ? "first_win" : "flop")}
+            onToggle={() => setOpenKey(openKey === "flop" ? null : "flop")}
             summary={pickLabel(bigFlop)}
           >
             {surpriseFlopError ? (
@@ -559,7 +559,7 @@ export default function SeasonPredictionPage() {
             title="First-time Race Winner"
             description="Pick the driver who will win their first ever F1 race this season."
             expanded={openKey === "first_win"}
-            onToggle={() => setOpenKey(openKey === "first_win" ? "constructors" : "first_win")}
+            onToggle={() => setOpenKey(openKey === "first_win" ? null : "first_win")}
             summary={driverLabel(firstTimeWinner)}
           >
             <DriverGrid
@@ -578,7 +578,7 @@ export default function SeasonPredictionPage() {
             title="Constructors’ Champion"
             description="Pick the team that will win the Constructors’ Championship."
             expanded={openKey === "constructors"}
-            onToggle={() => setOpenKey(openKey === "constructors" ? "wdc" : "constructors")}
+            onToggle={() => setOpenKey(openKey === "constructors" ? null : "constructors")}
             summary={teamLabel(constructorsChampion)}
           >
             <TeamGrid

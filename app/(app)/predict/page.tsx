@@ -480,7 +480,7 @@ async function handleSubmit() {
             title="Good Surprise"
             description="Pick the driver or team you think will pleasantly outperform expectations."
             expanded={openKey === "good"}
-            onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
+            onToggle={() => setOpenKey(openKey === "good" ? null : "good")}
             summary={pickLabel(goodSurprise)}
           >
             {surpriseFlopError ? (
@@ -513,7 +513,7 @@ async function handleSubmit() {
             title="Big Flop"
             description="Pick the driver or team you think will underperform expectations."
             expanded={openKey === "flop"}
-            onToggle={() => setOpenKey(openKey === "flop" ? "pole_position" : "flop")}
+            onToggle={() => setOpenKey(openKey === "flop" ? null : "flop")}
             summary={pickLabel(bigFlop)}
           >
             {surpriseFlopError ? (
@@ -546,7 +546,7 @@ async function handleSubmit() {
             title="Race Pole Position"
             description="Pick the driver who will start from pole position."
             expanded={openKey === "pole_position"}
-            onToggle={() => setOpenKey(openKey === "pole_position" ? "p3" : "pole_position")}
+            onToggle={() => setOpenKey(openKey === "pole_position" ? null : "pole_position")}
             summary={pole_position ? `${driverById.get(pole_position)?.full_name ?? "Selected"}` : "None"}
           >
             <DriverGrid drivers={drivers} selectedId={pole_position} onSelect={setPolePosition} onPicked={() => advance("pole_position")} />
@@ -558,7 +558,7 @@ async function handleSubmit() {
             title="Third Position (P3)"
             description="Pick the driver who will finish P3."
             expanded={openKey === "p3"}
-            onToggle={() => setOpenKey(openKey === "p3" ? "p2" : "p3")}
+            onToggle={() => setOpenKey(openKey === "p3" ? null : "p3")}
             summary={p3 ? `${driverById.get(p3)?.full_name ?? "Selected"}` : "None"}
           >
             {podiumError ? (
@@ -588,7 +588,7 @@ async function handleSubmit() {
             title="Second Position (P2)"
             description="Pick the driver who will finish P2."
             expanded={openKey === "p2"}
-            onToggle={() => setOpenKey(openKey === "p2" ? "win" : "p2")}
+            onToggle={() => setOpenKey(openKey === "p2" ? null : "p2")}
             summary={p2 ? `${driverById.get(p2)?.full_name ?? "Selected"}` : "None"}
           >
             {podiumError ? (
