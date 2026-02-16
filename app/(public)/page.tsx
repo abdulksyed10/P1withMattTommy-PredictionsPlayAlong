@@ -104,6 +104,10 @@ export default function Home() {
               <ShieldCheck className="h-4 w-4 text-primary" />
               Locks at FP1
             </Pill>
+            <Pill>
+              <Trophy className="h-4 w-4 text-primary" />
+              Season Predictions
+            </Pill>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
@@ -118,6 +122,9 @@ export default function Home() {
               <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
                 A play-along predictions game for the P1 with Matt & Tommy community.
                 Lock in picks before FP1, earn points after each race, and climb the leaderboard.
+                <span className="block mt-3 text-primary font-semibold">
+                  Submit your full 2026 Season Predictions before the season starts.
+                </span>
                 <span className="block mt-2 text-xs">
                   Play for fun, no money involved, just bragging rights and a chance to show off your F1 knowledge!
                 </span>
@@ -125,7 +132,7 @@ export default function Home() {
 
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <Link
-                  href="/predict"
+                  href="/season-prediction"
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:opacity-95"
                   style={{ boxShadow: "var(--p1-glow)" }}
                 >

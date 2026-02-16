@@ -111,6 +111,17 @@ export default function SeasonPredictionPage() {
     };
   }, []);
 
+  useEffect(() => {
+    // initialize immediately
+    setTimeLeft(computeTimeLeft(DEADLINE_ISO));
+
+    const id = window.setInterval(() => {
+      setTimeLeft(computeTimeLeft(DEADLINE_ISO));
+    }, 1000);
+
+    return () => window.clearInterval(id);
+  }, []);
+
   const driverById = useMemo(() => {
     const m = new Map<string, DriverRow>();
     for (const d of drivers) m.set(d.id, d);
@@ -179,6 +190,42 @@ export default function SeasonPredictionPage() {
 
   function advance(from: NonNullable<typeof openKey>) {
     setOpenKey(nextKey[from]);
+  }
+
+  // ===== Season submission countdown =====
+  const DEADLINE_ISO = "2026-03-01T08:17:30.000Z"; // == 2026-03-05 17:30:00 America/Los_Angeles
+
+  const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number; expired: boolean }>({
+    d: 0,
+    h: 0,
+    m: 0,
+    s: 0,
+    expired: false,
+  });
+
+  function computeTimeLeft(deadlineIso: string) {
+    const deadlineMs = new Date(deadlineIso).getTime();
+    const nowMs = Date.now();
+    let diff = Math.max(0, deadlineMs - nowMs);
+
+    const expired = diff === 0;
+
+    const d = Math.floor(diff / (24 * 60 * 60 * 1000));
+    diff -= d * 24 * 60 * 60 * 1000;
+
+    const h = Math.floor(diff / (60 * 60 * 1000));
+    diff -= h * 60 * 60 * 1000;
+
+    const m = Math.floor(diff / (60 * 1000));
+    diff -= m * 60 * 1000;
+
+    const s = Math.floor(diff / 1000);
+
+    return { d, h, m, s, expired };
+  }
+
+  function pad2(n: number) {
+    return String(n).padStart(2, "0");
   }
 
   async function handleSubmit() {
@@ -363,7 +410,7 @@ export default function SeasonPredictionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 pb-28">
+    <div className="mx-auto max-w-6xl px-4 py-12 pb-28">
       {authed === false ? (
         <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
           <span className="font-semibold">Login required:</span> You can explore the prediction form, but you must{" "}
@@ -374,14 +421,29 @@ export default function SeasonPredictionPage() {
         </div>
       ) : null}
 
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-start justify-between mb-6 gap-6">
         <SectionHeader
           title="Season Predictions"
           subtitle="Lock in your season-long picks before the season starts."
         />
-        <div className="text-right shrink-0">
-          <div className="text-xs text-muted-foreground">Predicting for</div>
-          <div className="text-sm font-semibold">{activeSeason ? activeSeason.label : "—"}</div>
+        <div className="shrink-0 flex flex-col items-end gap-2 text-right md:flex-row md:items-start md:gap-8">
+          <div>
+            <div className="text-xs text-muted-foreground">Predicting for</div>
+            <div className="text-sm font-semibold">
+              {activeSeason ? activeSeason.label : "—"}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs text-muted-foreground">Time left</div>
+            {timeLeft.expired ? (
+              <div className="text-sm font-semibold text-red-600">Closed</div>
+            ) : (
+              <div className="text-sm font-semibold tabular-nums">
+                {timeLeft.d}d {pad2(timeLeft.h)}h {pad2(timeLeft.m)}m {pad2(timeLeft.s)}s
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -518,9 +580,9 @@ export default function SeasonPredictionPage() {
               type="button"
               className={[
                 "rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground",
-                surpriseFlopError || submitting ? "bg-muted cursor-not-allowed" : "bg-primary hover:opacity-95",
+                surpriseFlopError || submitting || timeLeft.expired ? "bg-muted cursor-not-allowed" : "bg-primary hover:opacity-95",
               ].join(" ")}
-              disabled={!!surpriseFlopError || submitting}
+              disabled={!!surpriseFlopError || submitting || timeLeft.expired}
               onClick={handleSubmit}
             >
               {submitting ? "Submitting..." : "Submit Predictions"}

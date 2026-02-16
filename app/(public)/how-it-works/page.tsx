@@ -80,7 +80,7 @@ export default function HowItWorksPage() {
           </Pill>
           <Pill>
             <Trophy className="h-4 w-4 text-primary" />
-            Pre-Season Predictions Coming Soon
+            Pre-Season Predictions
           </Pill>
         </div>
 
@@ -169,7 +169,7 @@ export default function HowItWorksPage() {
         {/* Scoring */}
         <div className="mt-10">
           <h2 className="text-2xl font-semibold text-foreground">Scoring</h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-3xl leading-relaxed">
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
             Scoring is intentionally simple right now. Every correct driver pick is worth{" "}
             <strong className="text-foreground font-semibold">1 point</strong>. For the two questions that allow{" "}
             <strong className="text-foreground font-semibold">driver or team</strong> picks (Good Surprise and Big Flop),
@@ -178,7 +178,7 @@ export default function HowItWorksPage() {
           </p>
 
           <div className="py-4 pb-0 text-lg font-semibold text-foreground">
-              Points breakdown
+            Race Weekend Points breakdown
           </div>
           
           <div className="mt-4 rounded-2xl border border-border bg-card overflow-hidden">
@@ -225,6 +225,22 @@ export default function HowItWorksPage() {
 
                   <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
                     <td className="px-4 py-3">
+                      <div className="font-medium">Sprint Pole Position</div>
+                      <div className="text-xs text-muted-foreground">Driver pick</div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">1</td>
+                  </tr>
+
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">Sprint Race Winner</div>
+                      <div className="text-xs text-muted-foreground">Driver pick</div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">1</td>
+                  </tr>
+
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
                       <div className="font-medium">Good Surprise</div>
                       <div className="text-xs text-muted-foreground">
                         Driver pick = 1 point • Team pick = 2 points
@@ -260,6 +276,72 @@ export default function HowItWorksPage() {
               This section will be available under the <span className="text-foreground font-semibold">"Race-Verdict" </span> 
               (under work) section on the navigation bar once it’s released.
             </p>
+          </div>
+
+          <div className="py-4 pb-0 text-lg font-semibold text-foreground">
+            Season Points Breakdown
+          </div>
+          
+          <div className="mt-4 rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left text-sm text-foreground">
+                <thead className="text-muted-foreground border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Question</th>
+                    <th className="px-4 py-3 w-28 text-right font-semibold">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">World Champion</div>
+                      <div className="text-xs text-muted-foreground">Driver pick</div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">1</td>
+                  </tr>
+
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">Constructors’ Champion</div>
+                      <div className="text-xs text-muted-foreground">Driver pick</div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">1</td>
+                  </tr>
+
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">First-time Race Winner</div>
+                      <div className="text-xs text-muted-foreground">Driver pick</div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">1</td>
+                  </tr>
+
+                  <tr className="border-b border-border/60 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">Good Surprise</div>
+                      <div className="text-xs text-muted-foreground">
+                        Driver pick = 1 point • Team pick = 2 points
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                      1–2
+                    </td>
+                  </tr>
+
+                  <tr className="hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">Big Flop</div>
+                      <div className="text-xs text-muted-foreground">
+                        Driver pick = 1 point • Team pick = 2 points
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">
+                      1–2
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
