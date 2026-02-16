@@ -39,6 +39,23 @@ export default function SeasonPredictionPage() {
   const [goodTab, setGoodTab] = useState<"drivers" | "teams">("drivers");
   const [flopTab, setFlopTab] = useState<"drivers" | "teams">("drivers");
 
+  const FIRST_WIN_ELIGIBLE_CODES = new Set([
+    "ALB",
+    "STR",
+    "HUL",
+    "ANT",
+    "HAD",
+    "LAW",
+    "LIN",
+    "BEA",
+    "COL",
+    "BOR",
+  ]);
+
+  const firstWinEligibleDrivers = useMemo(() => {
+    return drivers.filter((d) => FIRST_WIN_ELIGIBLE_CODES.has(d.code));
+  }, [drivers]);
+
   const cardRefs = useRef<Record<
     NonNullable<typeof openKey>,
     HTMLDivElement | null
@@ -563,7 +580,7 @@ export default function SeasonPredictionPage() {
             summary={driverLabel(firstTimeWinner)}
           >
             <DriverGrid
-              drivers={drivers}
+              drivers={firstWinEligibleDrivers}
               selectedId={firstTimeWinner}
               onSelect={(id) => {
                 setFirstTimeWinner(id);
