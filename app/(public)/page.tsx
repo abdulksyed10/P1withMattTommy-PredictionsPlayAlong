@@ -120,7 +120,10 @@ export default function Home() {
               </h1>
 
               <p className="mt-4 text-base md:text-lg text-muted-foreground leading-relaxed max-w-2xl">
-                A play-along predictions game for the P1 with Matt & Tommy community.
+                <span className="font-semibold text-foreground">
+                  P1 Predictions
+                </span>{" "}
+                is a fan-made Formula 1 predictions game for the P1 with Matt & Tommy community.
                 Lock in picks before FP1, earn points after each race, and climb the leaderboard.
                 <span className="block mt-3 text-primary font-semibold">
                   Submit your full 2026 Season Predictions before the season starts.

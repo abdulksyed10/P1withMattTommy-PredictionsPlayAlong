@@ -3,6 +3,11 @@
 @import "./theme.css";
 @tailwind utilities;
 
+.no-scroll-anchor,
+.no-scroll-anchor * {
+  overflow-anchor: none;
+}
+
 /* Map your HSL tokens to Tailwind v4 theme tokens (so bg-background, text-foreground, etc. work) */
 @theme inline {
   --color-background: hsl(var(--background));

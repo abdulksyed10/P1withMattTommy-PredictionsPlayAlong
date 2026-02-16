@@ -1,7 +1,7 @@
 // /app/(app)/season-prediction/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 import SectionHeader from "@/components/predictions/SectionHeader";
@@ -38,6 +38,41 @@ export default function SeasonPredictionPage() {
   // tab state for driver/team questions
   const [goodTab, setGoodTab] = useState<"drivers" | "teams">("drivers");
   const [flopTab, setFlopTab] = useState<"drivers" | "teams">("drivers");
+
+  const cardRefs = useRef<Record<
+    NonNullable<typeof openKey>,
+    HTMLDivElement | null
+  >>({
+    good: null,
+    flop: null,
+    first_win: null,
+    constructors: null,
+    wdc: null,
+  });
+
+  // Helper to call even when openKey DOESN’T change (conflict case)
+  function scrollToCard(key: NonNullable<typeof openKey>) {
+    const el = cardRefs.current[key];
+    if (!el) return;
+
+    const headerEl = document.querySelector("[data-fixed-header]") as HTMLElement | null;
+    const headerH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+
+    const EXTRA_GAP = 12;
+    const y = el.getBoundingClientRect().top + window.scrollY - headerH - EXTRA_GAP;
+
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    if (!openKey) return;
+
+    const id = window.setTimeout(() => {
+      scrollToCard(openKey);
+    }, 0);
+
+    return () => window.clearTimeout(id);
+  }, [openKey]);
 
   useEffect(() => {
     let mounted = true;
@@ -193,7 +228,7 @@ export default function SeasonPredictionPage() {
   }
 
   // ===== Season submission countdown =====
-  const DEADLINE_ISO = "2026-03-01T08:17:30.000Z"; // == 2026-03-05 17:30:00 America/Los_Angeles
+  const DEADLINE_ISO = "2026-03-05T08:17:30.000Z"; // == 2026-03-05 17:30:00 America/Los_Angeles
 
   const [timeLeft, setTimeLeft] = useState<{ d: number; h: number; m: number; s: number; expired: boolean }>({
     d: 0,
@@ -266,6 +301,9 @@ export default function SeasonPredictionPage() {
       }
 
       if (surpriseFlopError) {
+        const k = openKey === "flop" ? "flop" : "good";
+        setOpenKey(k);
+        window.setTimeout(() => scrollToCard(k), 0);
         alert(surpriseFlopError);
         return;
       }
@@ -410,7 +448,7 @@ export default function SeasonPredictionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 pb-28">
+    <div className="no-scroll-anchor mx-auto max-w-6xl px-4 py-12 pb-28">
       {authed === false ? (
         <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
           <span className="font-semibold">Login required:</span> You can explore the prediction form, but you must{" "}
@@ -448,110 +486,130 @@ export default function SeasonPredictionPage() {
       </div>
 
       <div className="space-y-4">
-        <QuestionCard
-          title="Good Surprise"
-          description="Pick the driver or team you think will outperform expectations this season."
-          expanded={openKey === "good"}
-          onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
-          summary={pickLabel(goodSurprise)}
-        >
-          {surpriseFlopError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {surpriseFlopError}
-            </div>
-          ) : null}
+        <div ref={(el) => { cardRefs.current.good = el; }} >
+          <QuestionCard
+            title="Good Surprise"
+            description="Pick the driver or team you think will outperform expectations this season."
+            expanded={openKey === "good"}
+            onToggle={() => setOpenKey(openKey === "good" ? "flop" : "good")}
+            summary={pickLabel(goodSurprise)}
+          >
+            {surpriseFlopError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {surpriseFlopError}
+              </div>
+            ) : null}
 
-          <DriverOrTeamGrid
-            drivers={drivers}
-            teams={teams}
-            value={goodSurprise}
-            onChange={(p) => {
-              setGoodSurprise(p);
-              if (!willConflictIfSetGood(p)) advance("good");
-              else setOpenKey("good");
-            }}
-            tab={goodTab}
-            onTabChange={setGoodTab}
-          />
-        </QuestionCard>
+            <DriverOrTeamGrid
+              drivers={drivers}
+              teams={teams}
+              value={goodSurprise}
+              onChange={(p) => {
+                if (willConflictIfSetGood(p)) {
+                  setGoodSurprise(p);
+                  setOpenKey("good");
+                  window.setTimeout(() => scrollToCard("good"), 0);
+                  return;
+                }
+                setGoodSurprise(p);
+                advance("good");
+              }}
+              tab={goodTab}
+              onTabChange={setGoodTab}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Big Flop"
-          description="Pick the driver or team you think will underperform expectations this season."
-          expanded={openKey === "flop"}
-          onToggle={() => setOpenKey(openKey === "flop" ? "first_win" : "flop")}
-          summary={pickLabel(bigFlop)}
-        >
-          {surpriseFlopError ? (
-            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
-              {surpriseFlopError}
-            </div>
-          ) : null}
+        <div ref={(el) => { cardRefs.current.flop = el; }} >
+          <QuestionCard
+            title="Big Flop"
+            description="Pick the driver or team you think will underperform expectations this season."
+            expanded={openKey === "flop"}
+            onToggle={() => setOpenKey(openKey === "flop" ? "first_win" : "flop")}
+            summary={pickLabel(bigFlop)}
+          >
+            {surpriseFlopError ? (
+              <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/5 p-3 text-sm text-red-700">
+                {surpriseFlopError}
+              </div>
+            ) : null}
 
-          <DriverOrTeamGrid
-            drivers={drivers}
-            teams={teams}
-            value={bigFlop}
-            onChange={(p) => {
-              setBigFlop(p);
-              if (!willConflictIfSetFlop(p)) advance("flop");
-              else setOpenKey("flop");
-            }}
-            tab={flopTab}
-            onTabChange={setFlopTab}
-          />
-        </QuestionCard>
+            <DriverOrTeamGrid
+              drivers={drivers}
+              teams={teams}
+              value={bigFlop}
+              onChange={(p) => {
+                if (willConflictIfSetFlop(p)) {
+                  setBigFlop(p);
+                  setOpenKey("flop");
+                  window.setTimeout(() => scrollToCard("flop"), 0);
+                  return;
+                }
+                setBigFlop(p);
+                advance("flop");
+              }}
+              tab={flopTab}
+              onTabChange={setFlopTab}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="First-time Race Winner"
-          description="Pick the driver who will win their first ever F1 race this season."
-          expanded={openKey === "first_win"}
-          onToggle={() => setOpenKey(openKey === "first_win" ? "constructors" : "first_win")}
-          summary={driverLabel(firstTimeWinner)}
-        >
-          <DriverGrid
-            drivers={drivers}
-            selectedId={firstTimeWinner}
-            onSelect={(id) => {
-              setFirstTimeWinner(id);
-              advance("first_win");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.first_win = el; }} >
+          <QuestionCard
+            title="First-time Race Winner"
+            description="Pick the driver who will win their first ever F1 race this season."
+            expanded={openKey === "first_win"}
+            onToggle={() => setOpenKey(openKey === "first_win" ? "constructors" : "first_win")}
+            summary={driverLabel(firstTimeWinner)}
+          >
+            <DriverGrid
+              drivers={drivers}
+              selectedId={firstTimeWinner}
+              onSelect={(id) => {
+                setFirstTimeWinner(id);
+                advance("first_win");
+              }}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="Constructors’ Champion"
-          description="Pick the team that will win the Constructors’ Championship."
-          expanded={openKey === "constructors"}
-          onToggle={() => setOpenKey(openKey === "constructors" ? "wdc" : "constructors")}
-          summary={teamLabel(constructorsChampion)}
-        >
-          <TeamGrid
-            teams={teams}
-            selectedId={constructorsChampion}
-            onSelect={(id) => {
-              setConstructorsChampion(id);
-              advance("constructors");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.constructors = el; }} >
+          <QuestionCard
+            title="Constructors’ Champion"
+            description="Pick the team that will win the Constructors’ Championship."
+            expanded={openKey === "constructors"}
+            onToggle={() => setOpenKey(openKey === "constructors" ? "wdc" : "constructors")}
+            summary={teamLabel(constructorsChampion)}
+          >
+            <TeamGrid
+              teams={teams}
+              selectedId={constructorsChampion}
+              onSelect={(id) => {
+                setConstructorsChampion(id);
+                advance("constructors");
+              }}
+            />
+          </QuestionCard>
+        </div>
 
-        <QuestionCard
-          title="World Champion"
-          description="Pick the driver who will win the Drivers’ Championship."
-          expanded={openKey === "wdc"}
-          onToggle={() => setOpenKey(openKey === "wdc" ? null : "wdc")}
-          summary={driverLabel(worldChampion)}
-        >
-          <DriverGrid
-            drivers={drivers}
-            selectedId={worldChampion}
-            onSelect={(id) => {
-              setWorldChampion(id);
-              advance("wdc");
-            }}
-          />
-        </QuestionCard>
+        <div ref={(el) => { cardRefs.current.wdc = el; }} >
+          <QuestionCard
+            title="World Champion"
+            description="Pick the driver who will win the Drivers’ Championship."
+            expanded={openKey === "wdc"}
+            onToggle={() => setOpenKey(openKey === "wdc" ? null : "wdc")}
+            summary={driverLabel(worldChampion)}
+          >
+            <DriverGrid
+              drivers={drivers}
+              selectedId={worldChampion}
+              onSelect={(id) => {
+                setWorldChampion(id);
+                advance("wdc");
+              }}
+            />
+          </QuestionCard>
+        </div>
       </div>
 
       {/* Sticky submit bar */}

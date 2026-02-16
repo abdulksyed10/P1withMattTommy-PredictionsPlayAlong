@@ -71,7 +71,7 @@ export function Navbar() {
   }
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 border-b border-border bg-background/75 backdrop-blur">
+    <header data-fixed-header className="fixed top-0 inset-x-0 z-50 border-b border-border bg-background/75 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 h-16 flex items-center justify-between">
 
         {/* LOGO */}
