@@ -34,8 +34,13 @@ export default function Tile({
     >
       <div className="flex items-center gap-3">
         <div
-          className="relative rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
-          style={{ width: imgSize, height: imgSize }}
+          className="relative shrink-0 rounded-lg overflow-hidden border bg-muted flex items-center justify-center"
+          style={{
+            width: imgSize,
+            height: imgSize,
+            minWidth: imgSize,
+            minHeight: imgSize,
+          }}
         >
           {imgSrc ? (
             <Image
