@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 import SectionHeader from "@/components/predictions/SectionHeader";
@@ -22,6 +23,9 @@ export default function SeasonPredictionPage() {
   const [activeSeason, setActiveSeason] = useState<{ id: string; label: string } | null>(null);
 
   const [authed, setAuthed] = useState<boolean | null>(null);
+
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [checkingSubmitted, setCheckingSubmitted] = useState(false);
 
   // expanded sections (same UX as predict page)
   const [openKey, setOpenKey] = useState<
@@ -67,6 +71,8 @@ export default function SeasonPredictionPage() {
     wdc: null,
   });
 
+  const submittedCheckInFlight = useRef(false);
+
   // Helper to call even when openKey DOESN’T change (conflict case)
   function scrollToCard(key: NonNullable<typeof openKey>) {
     const el = cardRefs.current[key];
@@ -101,7 +107,8 @@ export default function SeasonPredictionPage() {
 
         // Auth state (for the disclaimer banner)
         const { data: userData } = await supabase.auth.getUser();
-        if (mounted) setAuthed(!!userData.user);
+        const user = userData.user ?? null;
+        if (mounted) setAuthed(!!user);
 
         const [
           { data: d, error: de },
@@ -162,6 +169,82 @@ export default function SeasonPredictionPage() {
       sub.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      if (!authed || !activeSeason?.id) {
+        setAlreadySubmitted(false);
+        return;
+      }
+
+      if (submittedCheckInFlight.current) return;
+      submittedCheckInFlight.current = true;
+
+      setCheckingSubmitted(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          if (!cancelled) setAlreadySubmitted(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("season_prediction_sets")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("season_id", activeSeason.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) setAlreadySubmitted(false);
+        else setAlreadySubmitted(!!data);
+      } finally {
+        submittedCheckInFlight.current = false;
+        if (!cancelled) setCheckingSubmitted(false);
+      }
+    }
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [authed, activeSeason?.id]);
+
+  async function refreshSubmittedStatus() {
+    if (!activeSeason?.id) return;
+    if (submittedCheckInFlight.current) return;
+
+    submittedCheckInFlight.current = true;
+    setCheckingSubmitted(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setAlreadySubmitted(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("season_prediction_sets")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("season_id", activeSeason.id)
+        .maybeSingle();
+
+      if (error) setAlreadySubmitted(false);
+      else setAlreadySubmitted(!!data);
+    } finally {
+      submittedCheckInFlight.current = false;
+      setCheckingSubmitted(false);
+    }
+  }
 
   useEffect(() => {
     // initialize immediately
@@ -433,6 +516,9 @@ export default function SeasonPredictionPage() {
         return;
       }
 
+      setAlreadySubmitted(true); // instant UI update
+      window.scrollTo({ top: 0, behavior: "smooth" }); // optional: bring banner into view
+      await refreshSubmittedStatus(); // sync with DB (banner + button)
       alert("Season predictions submitted.");
     } catch (e: any) {
       alert(e?.message ?? "Submit failed.");
@@ -473,6 +559,19 @@ export default function SeasonPredictionPage() {
             sign in
           </a>{" "}
           to submit predictions.
+        </div>
+      ) : null}
+
+      {authed === true && alreadySubmitted ? (
+        <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
+          <span className="font-semibold">Your predictions are submitted.</span>{" "}
+          <Link
+            href="/season-prediction/view"
+            className="text-primary font-semibold hover:opacity-90 underline underline-offset-4"
+          >
+            View your season predictions
+          </Link>
+          .
         </div>
       ) : null}
 
@@ -657,10 +756,16 @@ export default function SeasonPredictionPage() {
                 "rounded-xl px-4 py-2 text-sm font-semibold text-primary-foreground",
                 surpriseFlopError || submitting || timeLeft.expired ? "bg-muted cursor-not-allowed" : "bg-primary hover:opacity-95",
               ].join(" ")}
-              disabled={!!surpriseFlopError || submitting || timeLeft.expired}
+              disabled={!!surpriseFlopError || submitting || timeLeft.expired || checkingSubmitted}
               onClick={handleSubmit}
             >
-              {submitting ? "Submitting..." : "Submit Predictions"}
+              {submitting
+                ? "Submitting..."
+                : checkingSubmitted
+                  ? "Checking..."
+                  : alreadySubmitted
+                    ? "Update Predictions"
+                    : "Submit Predictions"}
             </button>
           </div>
         </div>
