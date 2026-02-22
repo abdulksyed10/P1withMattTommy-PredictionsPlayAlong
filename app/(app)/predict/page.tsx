@@ -559,9 +559,9 @@ async function handleSubmit() {
         </div>
       ) : null}
 
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <SectionHeader
-          title="Predictions"
+          title="Race Predictions"
           subtitle="Submit before Practice 1. First race week is standard (no sprint)."
         />
         <div className="text-right shrink-0">

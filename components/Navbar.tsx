@@ -5,11 +5,12 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Flag, Trophy, Info, LogIn } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Flag, Trophy, Info, LogIn, ChevronDown } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { User, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 
 function NavLink({
   href,
@@ -30,6 +31,7 @@ function NavLink({
       className={[
         "inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm transition",
         "border border-transparent",
+        "whitespace-nowrap shrink-0",
         active
           ? "bg-accent text-accent-foreground border-border shadow-(--p1-glow)"
           : "text-muted-foreground hover:text-foreground hover:bg-card hover:border-border",
@@ -38,6 +40,135 @@ function NavLink({
       {icon}
       <span>{label}</span>
     </Link>
+  );
+}
+
+function PredictionsDropdown() {
+  const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+
+  const active = useMemo(() => {
+    return pathname?.startsWith("/predict") || pathname?.startsWith("/season-prediction");
+  }, [pathname]);
+
+  // Track menu position (fixed, relative to viewport)
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  function updatePos() {
+    const el = btnRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({
+      top: r.bottom + 8,
+      left: r.right - 256, // menu width = 256px; right-align to button
+      width: 256,
+    });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    updatePos();
+
+    function onScrollOrResize() {
+      updatePos();
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    function onMouseDown(e: MouseEvent) {
+      const target = e.target as Node;
+      const btn = btnRef.current;
+      // If click is on the button, let button toggle handle it
+      if (btn && btn.contains(target)) return;
+
+      // If click is inside the portal menu, ignore (we close on link click)
+      const menu = document.getElementById("predictions-dropdown-menu");
+      if (menu && menu.contains(target)) return;
+
+      setOpen(false);
+    }
+
+    window.addEventListener("scroll", onScrollOrResize, true); // capture: catch scroll containers too
+    window.addEventListener("resize", onScrollOrResize);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onMouseDown);
+
+    return () => {
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onMouseDown);
+    };
+  }, [open]);
+
+  // Close when route changes
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  const menu =
+    open && pos
+      ? createPortal(
+          <div
+            id="predictions-dropdown-menu"
+            role="menu"
+            className="fixed z-9999 w-64 overflow-hidden rounded-2xl border border-border bg-background shadow-lg"
+            style={{
+              top: pos.top,
+              left: Math.max(8, pos.left), // keep on-screen
+            }}
+          >
+            <Link
+              href="/predict"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm text-foreground hover:bg-accent/40"
+            >
+              <div className="font-semibold">Race Predictions</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Pick for the next race weekend.</div>
+            </Link>
+
+            <div className="h-px bg-border" />
+
+            <Link
+              href="/season-prediction"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm text-foreground hover:bg-accent/40"
+            >
+              <div className="font-semibold">Pre-Season Predictions</div>
+              <div className="text-xs text-muted-foreground mt-0.5">Lock in season-long picks.</div>
+            </Link>
+          </div>,
+          document.body
+        )
+      : null;
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={[
+          "inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm transition",
+          "border border-transparent",
+          "whitespace-nowrap shrink-0",
+          active
+            ? "bg-accent text-accent-foreground border-border shadow-(--p1-glow)"
+            : "text-muted-foreground hover:text-foreground hover:bg-card hover:border-border",
+        ].join(" ")}
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <Flag className="h-4 w-4" />
+        <span>Make Predictions</span>
+        <ChevronDown className={["h-4 w-4 transition-transform", open ? "rotate-180" : ""].join(" ")} />
+      </button>
+
+      {menu}
+    </>
   );
 }
 
@@ -101,16 +232,9 @@ export function Navbar() {
             label="How it works"
             icon={<Info className="h-4 w-4" />}
           />
-          <NavLink
-            href="/predict"
-            label="Predict"
-            icon={<Flag className="h-4 w-4" />}
-          />
-          <NavLink
-            href="/season-prediction"
-            label="Pre-Season Predictions"
-            icon={<Flag className="h-4 w-4" />}
-          />
+          
+          <PredictionsDropdown />
+
           <NavLink
             href="/leaderboard"
             label="Leaderboard"
@@ -180,16 +304,9 @@ export function Navbar() {
             label="How it works"
             icon={<Info className="h-4 w-4" />}
           />
-          <NavLink
-            href="/predict"
-            label="Predict"
-            icon={<Flag className="h-4 w-4" />}
-          />
-          <NavLink
-            href="/season-prediction"
-            label="Pre-Season Predictions"
-            icon={<Flag className="h-4 w-4" />}
-          />
+          
+          <PredictionsDropdown />
+
           <NavLink
             href="/leaderboard"
             label="Leaderboard"

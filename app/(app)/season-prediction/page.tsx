@@ -552,7 +552,7 @@ export default function SeasonPredictionPage() {
   }
 
   return (
-    <div className="no-scroll-anchor mx-auto max-w-6xl px-4 py-12 pb-28">
+    <div className="no-scroll-anchor mx-auto max-w-6xl px-4 py-8 pb-28">
       {authed === false ? (
         <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
           <span className="font-semibold">Login required:</span> You can explore the prediction form, but you must{" "}
