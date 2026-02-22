@@ -519,6 +519,7 @@ export default function SeasonPredictionPage() {
       setAlreadySubmitted(true); // instant UI update
       window.scrollTo({ top: 0, behavior: "smooth" }); // optional: bring banner into view
       await refreshSubmittedStatus(); // sync with DB (banner + button)
+      
       alert("Season predictions submitted.");
     } catch (e: any) {
       alert(e?.message ?? "Submit failed.");

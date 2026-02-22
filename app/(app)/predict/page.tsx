@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 import SectionHeader from "@/components/predictions/SectionHeader";
@@ -21,6 +22,10 @@ export default function PredictPage() {
   const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
 
   const [authed, setAuthed] = useState<boolean | null>(null);
+
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+  const [checkingSubmitted, setCheckingSubmitted] = useState(false);
+  const submittedCheckInFlight = useRef(false);
 
   // expanded sections
   const [openKey, setOpenKey] = useState<"good" | "flop" | "pole_position" | "p3" | "p2" | "win" | null>("good");
@@ -143,6 +148,82 @@ export default function PredictPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function check() {
+      if (!authed || !currentRace?.id) {
+        setAlreadySubmitted(false);
+        return;
+      }
+
+      if (submittedCheckInFlight.current) return;
+      submittedCheckInFlight.current = true;
+
+      setCheckingSubmitted(true);
+      try {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          if (!cancelled) setAlreadySubmitted(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("prediction_sets")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("race_id", currentRace.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) setAlreadySubmitted(false);
+        else setAlreadySubmitted(!!data);
+      } finally {
+        submittedCheckInFlight.current = false;
+        if (!cancelled) setCheckingSubmitted(false);
+      }
+    }
+
+    check();
+    return () => {
+      cancelled = true;
+    };
+  }, [authed, currentRace?.id]);
+
+  async function refreshSubmittedStatus() {
+    if (!currentRace?.id) return;
+    if (submittedCheckInFlight.current) return;
+
+    submittedCheckInFlight.current = true;
+    setCheckingSubmitted(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setAlreadySubmitted(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("prediction_sets")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("race_id", currentRace.id)
+        .maybeSingle();
+
+      if (error) setAlreadySubmitted(false);
+      else setAlreadySubmitted(!!data);
+    } finally {
+      submittedCheckInFlight.current = false;
+      setCheckingSubmitted(false);
+    }
+  }
 
   const driverById = useMemo(() => {
     const m = new Map<string, DriverRow>();
@@ -418,6 +499,10 @@ async function handleSubmit() {
         return;
       }
 
+      setAlreadySubmitted(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      await refreshSubmittedStatus();
+
       alert("Predictions submitted.");
     } catch (e: any) {
       alert(e?.message ?? "Submit failed.");
@@ -458,6 +543,19 @@ async function handleSubmit() {
             sign in
           </a>{" "}
           to submit predictions.
+        </div>
+      ) : null}
+
+      {authed === true && alreadySubmitted ? (
+        <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
+          <span className="font-semibold">Your predictions are submitted.</span>{" "}
+          <Link
+            href="/predict/view"
+            className="text-primary font-semibold hover:opacity-90 underline underline-offset-4"
+          >
+            View your predictions
+          </Link>
+          .
         </div>
       ) : null}
 
@@ -698,10 +796,16 @@ async function handleSubmit() {
                   ? "bg-muted cursor-not-allowed"
                   : "bg-primary hover:opacity-95",
               ].join(" ")}
-              disabled={!!podiumError || !!surpriseFlopError || submitting}
+               disabled={!!podiumError || !!surpriseFlopError || submitting || checkingSubmitted}
               onClick={handleSubmit}
             >
-              {submitting ? "Submitting..." : "Submit Predictions"}
+              {submitting
+                ? "Submitting..."
+                : checkingSubmitted
+                  ? "Checking..."
+                  : alreadySubmitted
+                    ? "Update Predictions"
+                    : "Submit Predictions"}
             </button>
           </div>
         </div>
