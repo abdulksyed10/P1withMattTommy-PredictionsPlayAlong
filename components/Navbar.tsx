@@ -108,7 +108,7 @@ export function Navbar() {
           />
           <NavLink
             href="/season-prediction"
-            label="Season Predictions"
+            label="Pre-Season Predictions"
             icon={<Flag className="h-4 w-4" />}
           />
           <NavLink
@@ -187,7 +187,7 @@ export function Navbar() {
           />
           <NavLink
             href="/season-prediction"
-            label="Season Predictions"
+            label="Pre-Season Predictions"
             icon={<Flag className="h-4 w-4" />}
           />
           <NavLink
