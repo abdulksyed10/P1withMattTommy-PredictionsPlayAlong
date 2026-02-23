@@ -12,6 +12,7 @@ import type {
   RaceOption,
 } from "@/lib/types/leaderboard";
 import { LeaderboardTable } from "./LeaderboardTable";
+import { supabase } from "@/lib/supabaseClient";
 
 type Tab = "season" | "race";
 
@@ -59,10 +60,40 @@ export default function LeaderboardTabs() {
   const [loadingRace, setLoadingRace] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [highlightDisplayName, setHighlightDisplayName] = useState<string | null>(null);
+
   const selectedRace = useMemo(
     () => races.find((r) => r.id === selectedRaceId),
     [races, selectedRaceId]
   );
+
+  // Default race = most recently SCORED (else Round 1)
+  async function pickDefaultRaceId(raceOptions: RaceOption[]) {
+    if (!raceOptions.length) return "";
+
+    // Sort by round descending to find “most recently scored”
+    const byRoundDesc = [...raceOptions].sort(
+      (a, b) => (b.round ?? 0) - (a.round ?? 0)
+    );
+
+    for (const r of byRoundDesc) {
+      try {
+        const rows = await fetchRaceLeaderboard(r.id);
+        if (rows && rows.length > 0) return r.id; // scored if it returns rows
+      } catch {
+        // ignore and continue
+      }
+    }
+
+    // If none scored: default to Round 1 if present, otherwise the smallest round
+    const round1 = raceOptions.find((r) => r.round === 1);
+    if (round1) return round1.id;
+
+    const byRoundAsc = [...raceOptions].sort(
+      (a, b) => (a.round ?? 0) - (b.round ?? 0)
+    );
+    return byRoundAsc[0]?.id ?? raceOptions[0].id;
+  }
 
   // Initial load: season leaderboard + races list
   useEffect(() => {
@@ -71,6 +102,24 @@ export default function LeaderboardTabs() {
       try {
         setLoading(true);
         setError(null);
+
+        try {
+          const { data: userData } = await supabase.auth.getUser();
+          const user = userData.user ?? null;
+          if (user) {
+            const { data: meRow } = await supabase
+              .from("profiles")
+              .select("display_name")
+              .eq("id", user.id)
+              .maybeSingle();
+
+            if (!cancelled) setHighlightDisplayName(meRow?.display_name ?? null);
+          } else {
+            if (!cancelled) setHighlightDisplayName(null);
+          }
+        } catch {
+          if (!cancelled) setHighlightDisplayName(null);
+        }
 
         const [season, raceOptions] = await Promise.all([
           fetchSeasonLeaderboard(),
@@ -82,7 +131,12 @@ export default function LeaderboardTabs() {
         setSeasonRows(season);
         setRaces(raceOptions);
 
-        if (raceOptions.length > 0) setSelectedRaceId(raceOptions[0].id);
+        if (raceOptions.length > 0) {
+          const defaultId = await pickDefaultRaceId(raceOptions);
+          if (!cancelled) setSelectedRaceId(defaultId);
+        } else {
+          setSelectedRaceId("");
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message ?? "Failed to load leaderboard.");
       } finally {
@@ -172,6 +226,7 @@ export default function LeaderboardTabs() {
       ) : tab === "season" ? (
         <LeaderboardTable
           caption="Season leaderboard"
+          highlightDisplayName={highlightDisplayName}
           rows={seasonRows.map((r) => ({
             display_name: r.display_name,
             points: r.total_points,
@@ -186,6 +241,7 @@ export default function LeaderboardTabs() {
 
           <LeaderboardTable
             caption="Race leaderboard"
+            highlightDisplayName={highlightDisplayName}
             rows={raceRows.map((r) => ({
               display_name: r.display_name,
               points: r.total_points,

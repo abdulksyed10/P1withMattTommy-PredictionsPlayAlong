@@ -19,9 +19,11 @@ function denseRanks(points: number[]) {
 export function LeaderboardTable({
   rows,
   caption,
+  highlightDisplayName,
 }: {
   rows: Row[];
   caption: string;
+  highlightDisplayName?: string | null;
 }) {
   const ranks = denseRanks(rows.map((r) => r.points));
 
@@ -51,6 +53,11 @@ export function LeaderboardTable({
             rows.map((r, i) => {
               const rank = ranks[i];
               const isFirst = rank === 1;
+
+              const isMe =
+                !!highlightDisplayName &&
+                !!r.display_name &&
+                r.display_name.trim().toLowerCase() === highlightDisplayName.trim().toLowerCase();
 
               return (
                 <tr

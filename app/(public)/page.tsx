@@ -89,7 +89,7 @@ export default function Home() {
       <GlowBackdrop />
 
       {/* HERO */}
-      <section className="relative mx-auto max-w-6xl px-4 pt-10 md:pt-16 pb-10">
+      <section className="relative mx-auto max-w-6xl px-4 pt-10 md:pt-10 pb-10">
         <div className="flex flex-col gap-8 md:gap-10">
           <div className="flex flex-wrap items-center gap-2">
             <Pill>
