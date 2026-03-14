@@ -52,6 +52,9 @@ export default function AdminPage() {
 
     const res = await fetch(`/api/admin/score-race?raceId=${raceId}`, {
       method: "POST",
+      headers: {
+        "x-admin-secret": process.env.NEXT_PUBLIC_ADMIN_SCORE_SECRET!,
+      },
     });
 
     const text = await res.text();
