@@ -1,91 +1,100 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
 
-async function getRaces() {
-  const supabase = await createClient();
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
-  const { data } = await supabase
-    .from("races")
-    .select("id, name, round")
-    .order("round", { ascending: false });
+export default function AdminPage() {
+  const router = useRouter();
 
-  return data ?? [];
-}
+  const [loading, setLoading] = useState(true);
+  const [races, setRaces] = useState<any[]>([]);
+  const [raceId, setRaceId] = useState("");
 
-async function scoreRace(formData: FormData) {
-  "use server";
+  useEffect(() => {
+    async function checkUser() {
+      const { data } = await supabase.auth.getUser();
 
-  const supabase = await createClient();
+      const email = data.user?.email;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+      const admins =
+        process.env.NEXT_PUBLIC_ADMIN_EMAILS?.split(",").map((e) => e.trim()) ??
+        [];
 
-  if (!user) throw new Error("Not authenticated");
+      if (!email) {
+        router.push("/login?redirect=/admin");
+        return;
+      }
 
-  const adminEmails =
-    process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) ?? [];
+      if (!admins.includes(email)) {
+        router.push("/");
+        return;
+      }
 
-  if (!adminEmails.includes(user.email ?? "")) {
-    throw new Error("Not authorized");
+      setLoading(false);
+
+      const { data: raceData } = await supabase
+        .from("races")
+        .select("id,name,round")
+        .order("round", { ascending: false });
+
+      setRaces(raceData ?? []);
+    }
+
+    checkUser();
+  }, []);
+
+  async function scoreRace() {
+    if (!raceId) {
+      alert("Select a race first");
+      return;
+    }
+
+    const res = await fetch(`/api/admin/score-race?raceId=${raceId}`, {
+      method: "POST",
+    });
+
+    if (!res.ok) {
+      alert("Scoring failed");
+      return;
+    }
+
+    alert("Race scored successfully");
   }
 
-  const raceId = formData.get("raceId") as string;
-
-  if (!raceId) throw new Error("Race not selected");
-
-  // run scoring directly using DB function
-  const { error } = await supabase.rpc("score_race", {
-    race_id: raceId,
-  });
-
-  if (error) {
-    console.error(error);
-    throw new Error("Scoring failed");
+  if (loading) {
+    return <div className="p-8">Checking admin access...</div>;
   }
-}
-
-export default async function AdminPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login?redirect=/admin");
-
-  const adminEmails =
-    process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) ?? [];
-
-  if (!adminEmails.includes(user.email ?? "")) {
-    redirect("/");
-  }
-
-  const races = await getRaces();
 
   return (
     <div className="max-w-xl mx-auto p-8 space-y-6">
-      <h1 className="text-2xl font-bold">Admin Panel</h1>
 
-      <form action={scoreRace} className="space-y-4">
+      <h1 className="text-2xl font-bold">
+        Admin – Score Race
+      </h1>
 
-        <select name="raceId" required className="border p-2 rounded w-full">
-          <option value="">Select race</option>
+      <select
+        value={raceId}
+        onChange={(e) => setRaceId(e.target.value)}
+        className="border p-2 rounded w-full"
+      >
+        <option value="">Select race</option>
 
-          {races.map((race) => (
-            <option key={race.id} value={race.id}>
-              Round {race.round} — {race.name}
-            </option>
-          ))}
-        </select>
+        {races.map((race) => (
+          <option key={race.id} value={race.id}>
+            Round {race.round} — {race.name}
+          </option>
+        ))}
 
-        <button
-          className="bg-purple-600 text-white px-4 py-2 rounded"
-        >
-          Score Race
-        </button>
+      </select>
 
-      </form>
+      <button
+        onClick={scoreRace}
+        className="bg-purple-600 text-white px-4 py-2 rounded"
+      >
+        Score Race
+      </button>
+
     </div>
   );
 }
