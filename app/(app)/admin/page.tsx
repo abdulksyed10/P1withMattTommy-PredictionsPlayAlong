@@ -54,8 +54,10 @@ export default function AdminPage() {
       method: "POST",
     });
 
+    const text = await res.text();
+
     if (!res.ok) {
-      alert("Scoring failed");
+      alert(text);
       return;
     }
 
