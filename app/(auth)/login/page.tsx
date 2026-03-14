@@ -47,7 +47,11 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/leaderboard");
+    // router.push("/leaderboard");
+    const params = new URLSearchParams(window.location.search);
+    const redirectTo = params.get("redirect") ?? "/leaderboard";
+
+    router.push(redirectTo);
   }
 
   return (

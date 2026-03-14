@@ -15,22 +15,33 @@ async function getRaces() {
 async function scoreRace(formData: FormData) {
   "use server";
 
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) throw new Error("Not authenticated");
+
+  const adminEmails =
+    process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) ?? [];
+
+  if (!adminEmails.includes(user.email ?? "")) {
+    throw new Error("Not authorized");
+  }
+
   const raceId = formData.get("raceId") as string;
 
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_SITE_URL}/api/admin/score-race?raceId=${raceId}`,
-    {
-      method: "POST",
-      headers: {
-        "x-admin-secret": process.env.ADMIN_SCORE_SECRET!,
-      },
-    }
-  );
+  if (!raceId) throw new Error("Race not selected");
 
-  const data = await res.json();
+  // run scoring directly using DB function
+  const { error } = await supabase.rpc("score_race", {
+    race_id: raceId,
+  });
 
-  if (!res.ok) {
-    throw new Error(data.error || "Scoring failed");
+  if (error) {
+    console.error(error);
+    throw new Error("Scoring failed");
   }
 }
 
@@ -41,7 +52,7 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?redirect=/admin");
 
   const adminEmails =
     process.env.ADMIN_EMAILS?.split(",").map((e) => e.trim()) ?? [];
@@ -54,15 +65,11 @@ export default async function AdminPage() {
 
   return (
     <div className="max-w-xl mx-auto p-8 space-y-6">
-      <h1 className="text-2xl font-bold">Admin – Score Race</h1>
+      <h1 className="text-2xl font-bold">Admin Panel</h1>
 
       <form action={scoreRace} className="space-y-4">
 
-        <select
-          name="raceId"
-          required
-          className="border p-2 rounded w-full"
-        >
+        <select name="raceId" required className="border p-2 rounded w-full">
           <option value="">Select race</option>
 
           {races.map((race) => (
@@ -73,7 +80,6 @@ export default async function AdminPage() {
         </select>
 
         <button
-          type="submit"
           className="bg-purple-600 text-white px-4 py-2 rounded"
         >
           Score Race
