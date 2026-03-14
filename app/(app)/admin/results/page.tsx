@@ -10,6 +10,7 @@ export default function AdminResultsPage() {
   const [drivers,setDrivers] = useState<any[]>([]);
   const [teams,setTeams] = useState<any[]>([]);
   const [races,setRaces] = useState<any[]>([]);
+  const [questions,setQuestions] = useState<any[]>([]);
 
   const [raceId,setRaceId] = useState("");
 
@@ -39,10 +40,15 @@ export default function AdminResultsPage() {
         .from("races")
         .select("id,name,round")
         .order("round");
+      
+      const {data:q} = await supabase
+        .from("questions")
+        .select("id,key");
 
       setDrivers(d ?? []);
       setTeams(t ?? []);
       setRaces(r ?? []);
+      setQuestions(q ?? []);
 
     }
 
@@ -70,6 +76,13 @@ export default function AdminResultsPage() {
     ];
 
     for(const q of answers){
+
+      const question = questions.find(x => x.key === q.key);
+
+      if(!question){
+        alert("Question not found: " + q.key);
+        return;
+      }
 
       const {data:keyRow,error:keyErr} = await supabase
         .from("race_question_answer_keys")
