@@ -122,7 +122,8 @@ export async function POST(req: Request) {
   const { data: sets, error: setsErr } = await supabaseAdmin
     .from("prediction_sets")
     .select("id, user_id")
-    .eq("race_id", raceId);
+    .eq("race_id", raceId)
+    .eq("status", "submitted");
 
   if (setsErr) {
     return NextResponse.json({ error: setsErr.message }, { status: 500 });
