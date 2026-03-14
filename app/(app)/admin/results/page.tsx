@@ -65,10 +65,10 @@ export default function AdminResultsPage() {
 
     const answers = [
 
-      {key:"p1",driver:p1},
+      {key:"p1_winner",driver:p1},
       {key:"p2",driver:p2},
       {key:"p3",driver:p3},
-      {key:"pole",driver:pole},
+      {key:"pole_position",driver:pole},
 
       {key:"good_surprise",drivers:goodSurprise},
       {key:"big_flop",drivers:bigFlop}
@@ -88,7 +88,7 @@ export default function AdminResultsPage() {
         .from("race_question_answer_keys")
         .insert({
           race_id:raceId,
-          question_key:q.key,
+          question_id:question.id,
           is_final:true,
           published_at:new Date()
         })
@@ -114,12 +114,15 @@ export default function AdminResultsPage() {
 
       if(q.drivers){
 
-        for(const d of q.drivers){
+        for(const id of q.drivers){
+
+          const isDriver = drivers.some(d => d.id === id);
 
           rows.push({
             answer_key_id:keyRow.id,
-            choice_kind:"driver",
-            driver_id:d
+            choice_kind: isDriver ? "driver" : "team",
+            driver_id: isDriver ? id : null,
+            team_id: isDriver ? null : id
           });
 
         }
@@ -166,10 +169,10 @@ export default function AdminResultsPage() {
 
       <div className="grid grid-cols-2 gap-6">
 
-        <DriverSelect label="P1" drivers={drivers} value={p1} setValue={setP1}/>
+        <DriverSelect label="P1 Winner" drivers={drivers} value={p1} setValue={setP1}/>
         <DriverSelect label="P2" drivers={drivers} value={p2} setValue={setP2}/>
         <DriverSelect label="P3" drivers={drivers} value={p3} setValue={setP3}/>
-        <DriverSelect label="Pole" drivers={drivers} value={pole} setValue={setPole}/>
+        <DriverSelect label="Pole Position" drivers={drivers} value={pole} setValue={setPole}/>
 
       </div>
 
