@@ -578,8 +578,8 @@ export default function SeasonPredictionPage() {
 
       <div className="flex items-start justify-between mb-6 gap-6">
         <SectionHeader
-          title="Season Predictions"
-          subtitle="Lock in your season-long picks before the season starts."
+          title="Season Predictions (Closed)"
+          subtitle="Season predictions are now closed as the season has started. Mid-season predictions will open in late July."
         />
         <div className="shrink-0 flex flex-col items-end gap-2 text-right md:flex-row md:items-start md:gap-8">
           <div>
