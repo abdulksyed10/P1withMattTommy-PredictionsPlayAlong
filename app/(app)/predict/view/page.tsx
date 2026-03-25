@@ -74,11 +74,11 @@ export default function PredictViewPage() {
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
   const [teams, setTeams] = useState<TeamRow[]>([]);
 
-  // ✅ CHANGE: list of races + selected race (dropdown)
+  // list of races + selected race (dropdown)
   const [races, setRaces] = useState<RaceLite[]>([]);
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
 
-  // ✅ CHANGE: if user has no prediction set for selected race
+  // if user has no prediction set for selected race
   const [hasPredictionsForRace, setHasPredictionsForRace] = useState<boolean>(true);
 
   const [predictionsByKey, setPredictionsByKey] = useState<
@@ -105,7 +105,7 @@ export default function PredictViewPage() {
     return m;
   }, [teams]);
 
-  // ✅ CHANGE: loads auth + drivers/teams + races + default selectedRaceId (most recently updated/submitted)
+  // loads auth + drivers/teams + races + default selectedRaceId (most recently updated/submitted)
   async function loadAll(opts?: { soft?: boolean }) {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
@@ -134,7 +134,7 @@ export default function PredictViewPage() {
           .select("id, code, name, is_active")
           .eq("is_active", true)
           .order("name", { ascending: true }),
-        // ✅ CHANGE: get all races (active season only), not just next race
+        // get all races (active season only), not just next race
         supabase
           .from("races")
           .select("id, name, round, race_date, seasons!inner(is_active)")
@@ -163,7 +163,7 @@ export default function PredictViewPage() {
         return;
       }
 
-      // ✅ CHANGE: choose default race = most recently updated/submitted prediction_set
+      // choose default race = most recently updated/submitted prediction_set
       const { data: latestSet, error: latestErr } = await supabase
         .from("prediction_sets")
         .select("race_id, updated_at, submitted_at")
@@ -190,7 +190,7 @@ export default function PredictViewPage() {
     }
   }
 
-  // ✅ CHANGE: load predictions for a specific race (runs when selectedRaceId changes)
+  // load predictions for a specific race (runs when selectedRaceId changes)
   async function loadPredictionsForRace(raceId: string) {
     if (fetchInFlight.current) return;
     fetchInFlight.current = true;
@@ -275,7 +275,7 @@ export default function PredictViewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ✅ CHANGE: load predictions when race changes (after initial default is set)
+  // load predictions when race changes (after initial default is set)
   useEffect(() => {
     if (!selectedRaceId) return;
     if (authed === false) return;
@@ -362,7 +362,7 @@ export default function PredictViewPage() {
       <div className="flex items-start justify-between mb-6 gap-6">
         <SectionHeader title="Your Predictions" subtitle="Here’s what you’ve locked in for this race." />
         <div className="shrink-0 flex flex-col items-end gap-2 text-right md:flex-row md:items-start md:gap-8">
-          {/* ✅ CHANGE: race selector */}
+          {/* race selector */}
           <div>
             <div className="text-xs text-muted-foreground">Your Predictions for</div>
             <div className="mt-1">
@@ -387,7 +387,7 @@ export default function PredictViewPage() {
         </div>
       </div>
 
-      {/* ✅ CHANGE: empty state for selected race */}
+      {/* empty state for selected race */}
       {authed === true && selectedRaceId && !hasPredictionsForRace ? (
         <div className="rounded-2xl border border-border bg-card p-6">
           <div className="text-sm text-foreground font-semibold">No predictions made for this race.</div>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Flag, Trophy, Info, LogIn, ChevronDown } from "lucide-react";
+import { Flag, Trophy, Info, LogIn, ChevronDown, Medal } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { User, LogOut } from "lucide-react";
@@ -236,6 +236,12 @@ export function Navbar() {
           <PredictionsDropdown />
 
           <NavLink
+            href="/race-results"
+            label="Race Results"
+            icon={<Medal className="h-4 w-4" />}
+          />
+
+          <NavLink
             href="/leaderboard"
             label="Leaderboard"
             icon={<Trophy className="h-4 w-4" />}
@@ -303,6 +309,12 @@ export function Navbar() {
             href="/how-it-works"
             label="How it works"
             icon={<Info className="h-4 w-4" />}
+          />
+
+          <NavLink
+            href="/race-results"
+            label="Race Results"
+            icon={<Medal className="h-4 w-4" />}
           />
           
           <PredictionsDropdown />
