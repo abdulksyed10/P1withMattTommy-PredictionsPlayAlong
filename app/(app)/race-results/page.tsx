@@ -15,6 +15,8 @@ import type { DriverRow, TeamRow } from "@/components/predictions/types";
 const QUESTION_KEYS = [
   "good_surprise",
   "big_flop",
+  "sprint_pole",
+  "sprint_winner",
   "pole_position",
   "p3",
   "p2",
@@ -26,6 +28,8 @@ type QuestionKey = (typeof QUESTION_KEYS)[number];
 const QUESTION_META: Record<QuestionKey, { title: string }> = {
   good_surprise: { title: "Good Surprise" },
   big_flop: { title: "Big Flop" },
+  sprint_pole: { title: "Sprint Pole" },
+  sprint_winner: { title: "Sprint Winner" },
   pole_position: { title: "Race Pole Position" },
   p3: { title: "Third Position (P3)" },
   p2: { title: "Second Position (P2)" },
@@ -35,6 +39,7 @@ const QUESTION_META: Record<QuestionKey, { title: string }> = {
 type RaceLite = {
   id: string;
   label: string;
+  hasSprint: boolean;
 };
 
 /**
@@ -82,6 +87,34 @@ export default function RaceResultsPage() {
     return m;
   }, [teams]);
 
+  const selectedRace = useMemo(() => {
+    return races.find((r) => r.id === selectedRaceId) ?? null;
+  }, [races, selectedRaceId]);
+
+  const visibleQuestionKeys = useMemo<QuestionKey[]>(() => {
+    if (selectedRace?.hasSprint) {
+      return [
+        "good_surprise",
+        "big_flop",
+        "sprint_pole",
+        "sprint_winner",
+        "pole_position",
+        "p3",
+        "p2",
+        "p1_winner",
+      ];
+    }
+
+    return [
+      "good_surprise",
+      "big_flop",
+      "pole_position",
+      "p3",
+      "p2",
+      "p1_winner",
+    ];
+  }, [selectedRace?.hasSprint]);
+
   /**
    * Load:
    * - active drivers
@@ -116,7 +149,7 @@ export default function RaceResultsPage() {
 
         supabase
           .from("races")
-          .select("id, name, round, race_date, seasons!inner(is_active)")
+          .select("id, name, round, race_date, has_sprint, seasons!inner(is_active)")
           .eq("seasons.is_active", true)
           .order("race_date", { ascending: true }),
       ]);
@@ -131,6 +164,7 @@ export default function RaceResultsPage() {
       const raceOptions: RaceLite[] = ((raceRows ?? []) as any[]).map((r) => ({
         id: r.id,
         label: `Round ${r.round}: ${r.name}`,
+        hasSprint: !!r.has_sprint,
       }));
 
       setRaces(raceOptions);
@@ -324,7 +358,13 @@ export default function RaceResultsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 pb-16">
       <div className="mb-6 flex items-start justify-between gap-4">
-        <SectionHeader title="Race Results" subtitle="Official race outcomes" />
+        <SectionHeader title="Race Results"
+          subtitle={
+            selectedRace?.hasSprint
+              ? "Official race outcomes for a sprint weekend"
+              : "Official race outcomes"
+          } 
+        />
 
         <div className="shrink-0 text-right">
           <div className="text-xs text-muted-foreground">Showing results for</div>
@@ -338,7 +378,7 @@ export default function RaceResultsPage() {
               {races.length === 0 ? <option value="">—</option> : null}
               {races.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.label}
+                  {r.label}{r.hasSprint ? " • Sprint" : ""}
                 </option>
               ))}
             </select>
