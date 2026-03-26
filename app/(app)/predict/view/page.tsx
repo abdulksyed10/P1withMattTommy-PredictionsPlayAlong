@@ -10,7 +10,7 @@ import SectionHeader from "@/components/predictions/SectionHeader";
 import QuestionCard from "@/components/predictions/QuestionCard";
 import type { DriverRow, TeamRow } from "@/components/predictions/types";
 
-type RaceLite = { id: string; label: string };
+type RaceLite = { id: string; label: string; has_sprint: boolean };
 
 type PredictionRow = {
   question_id: string;
@@ -18,11 +18,13 @@ type PredictionRow = {
   answer_team_id: string | null;
 };
 
-const QUESTION_KEYS = ["good_surprise", "big_flop", "pole_position", "p3", "p2", "p1_winner"] as const;
+const QUESTION_KEYS = ["good_surprise", "big_flop", "sprint_pole", "sprint_winner", "pole_position", "p3", "p2", "p1_winner"] as const;
 
 const QUESTION_META: Record<(typeof QUESTION_KEYS)[number], { title: string }> = {
   good_surprise: { title: "Good Surprise" },
   big_flop: { title: "Big Flop" },
+  sprint_pole: { title: "Sprint Pole" },
+  sprint_winner: { title: "Sprint Winner" },
   pole_position: { title: "Race Pole Position" },
   p3: { title: "Third Position (P3)" },
   p2: { title: "Second Position (P2)" },
@@ -105,6 +107,22 @@ export default function PredictViewPage() {
     return m;
   }, [teams]);
 
+  // Selected race lookup so we know whether to show sprint questions
+  const selectedRace = useMemo(() => {
+    return races.find((r) => r.id === selectedRaceId) ?? null;
+  }, [races, selectedRaceId]);
+
+  // Only show sprint questions for sprint weekends
+  const visibleQuestionKeys = useMemo(() => {
+    if (selectedRace?.has_sprint) {
+      return QUESTION_KEYS;
+    }
+
+    return QUESTION_KEYS.filter(
+      (k) => k !== "sprint_pole" && k !== "sprint_winner"
+    );
+  }, [selectedRace]);
+
   // loads auth + drivers/teams + races + default selectedRaceId (most recently updated/submitted)
   async function loadAll(opts?: { soft?: boolean }) {
     if (fetchInFlight.current) return;
@@ -114,8 +132,7 @@ export default function PredictViewPage() {
       if (!opts?.soft) setLoading(true);
       setErr(null);
 
-      const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
+      const { data: userData } = await supabase.auth.getUser();
       const user = userData.user ?? null;
       setAuthed(!!user);
 
@@ -137,7 +154,7 @@ export default function PredictViewPage() {
         // get all races (active season only), not just next race
         supabase
           .from("races")
-          .select("id, name, round, race_date, seasons!inner(is_active)")
+          .select("id, name, round, race_date, has_sprint, seasons!inner(is_active)")
           .eq("seasons.is_active", true)
           .order("race_date", { ascending: true }),
       ]);
@@ -152,6 +169,7 @@ export default function PredictViewPage() {
       const raceOptions: RaceLite[] = ((r ?? []) as any[]).map((x) => ({
         id: x.id,
         label: `Round ${x.round}: ${x.name}`,
+        has_sprint: !!x.has_sprint,
       }));
       setRaces(raceOptions);
 
@@ -201,14 +219,15 @@ export default function PredictViewPage() {
       setPredictionsByKey({});
 
       const { data: userData, error: userErr } = await supabase.auth.getUser();
-      if (userErr) throw userErr;
       const user = userData.user ?? null;
-      setAuthed(!!user);
-
+      
       if (!user) {
+        setAuthed(false);
         setHasPredictionsForRace(false);
         return;
       }
+
+      setAuthed(true);
 
       // Map question_id -> key
       const { data: qs, error: qErr } = await supabase
@@ -254,7 +273,11 @@ export default function PredictViewPage() {
       setHasPredictionsForRace(true);
       setPredictionsByKey(byKey);
     } catch (e: any) {
-      setErr(e?.message ?? "Failed to load race predictions.");
+      if (e?.message?.toLowerCase().includes("auth")) {
+        setErr(null);
+      } else {
+        setErr(e?.message ?? "Failed to load race predictions.");
+      }
     } finally {
       fetchInFlight.current = false;
     }
@@ -352,7 +375,7 @@ export default function PredictViewPage() {
       {authed === false ? (
         <div className="mb-4 rounded-2xl border border-border bg-accent/30 px-4 py-3 text-sm text-foreground">
           <span className="font-semibold">Login required:</span> You must{" "}
-          <a href="/login" className="text-primary font-semibold hover:opacity-90 underline underline-offset-4">
+          <a href="/login" className="text-primary font-semibold underline underline-offset-4">
             sign in
           </a>{" "}
           to view your predictions.
@@ -360,7 +383,13 @@ export default function PredictViewPage() {
       ) : null}
 
       <div className="flex items-start justify-between mb-6 gap-6">
-        <SectionHeader title="Your Predictions" subtitle="Here’s what you’ve locked in for this race." />
+        <SectionHeader title="Your Predictions" 
+          subtitle={
+            selectedRace?.has_sprint
+              ? "Here’s what you’ve locked in for this sprint weekend."
+              : "Here’s what you’ve locked in for this race."
+          } 
+        />
         <div className="shrink-0 flex flex-col items-end gap-2 text-right md:flex-row md:items-start md:gap-8">
           {/* race selector */}
           <div>
@@ -378,6 +407,7 @@ export default function PredictViewPage() {
                 {races.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.label}
+                    {r.has_sprint ? " • Sprint" : ""}
                   </option>
                 ))}
               </select>
@@ -404,7 +434,7 @@ export default function PredictViewPage() {
       {/* Cards */}
       {authed === true && selectedRaceId && hasPredictionsForRace ? (
         <div className="space-y-4">
-          {QUESTION_KEYS.map((k) => (
+          {visibleQuestionKeys.map((k) => (
             <QuestionCard
               key={k}
               title={QUESTION_META[k].title}
