@@ -132,6 +132,20 @@ function PredictionsDropdown() {
             <div className="h-px bg-border" />
 
             <Link
+              href="/predict/view"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-3 text-sm text-foreground hover:bg-accent/40"
+            >
+              <div className="font-semibold">View Race Predictions</div>
+              <div className="text-xs text-muted-foreground mt-0.5">
+                See your submitted race picks.
+              </div>
+            </Link>
+
+            <div className="h-px bg-border" />
+
+            <Link
               href="/season-prediction"
               role="menuitem"
               onClick={() => setOpen(false)}
