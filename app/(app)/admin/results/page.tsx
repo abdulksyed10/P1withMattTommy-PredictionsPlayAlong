@@ -1,3 +1,5 @@
+// p1-predictions\app\(app)\admin\results\page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,6 +21,9 @@ export default function AdminResultsPage() {
   const [p3,setP3] = useState("");
   const [pole,setPole] = useState("");
 
+  const [sprintPole, setSprintPole] = useState("");
+  const [sprintWinner, setSprintWinner] = useState("");
+
   const [goodSurprise,setGoodSurprise] = useState<string[]>([]);
   const [bigFlop,setBigFlop] = useState<string[]>([]);
 
@@ -38,7 +43,7 @@ export default function AdminResultsPage() {
 
       const {data:r} = await supabase
         .from("races")
-        .select("id,name,round")
+        .select("id,name,round,has_sprint")
         .order("round");
       
       const {data:q} = await supabase
@@ -56,6 +61,8 @@ export default function AdminResultsPage() {
 
   },[]);
 
+  const selectedRace = races.find((r) => r.id === raceId);
+
   async function saveResults(){
 
     if(!raceId){
@@ -69,6 +76,13 @@ export default function AdminResultsPage() {
       {key:"p2",driver:p2},
       {key:"p3",driver:p3},
       {key:"pole_position",driver:pole},
+
+      ...(selectedRace?.has_sprint
+        ? [
+            { key: "sprint_pole", driver: sprintPole },
+            { key: "sprint_winner", driver: sprintWinner },
+          ]
+        : []),
 
       {key:"good_surprise",drivers:goodSurprise},
       {key:"big_flop",drivers:bigFlop}
@@ -162,6 +176,7 @@ export default function AdminResultsPage() {
         {races.map(r=>(
           <option key={r.id} value={r.id}>
             Round {r.round} — {r.name}
+            {r.has_sprint ? " (Sprint)" : ""}
           </option>
         ))}
 
@@ -173,6 +188,23 @@ export default function AdminResultsPage() {
         <DriverSelect label="P2" drivers={drivers} value={p2} setValue={setP2}/>
         <DriverSelect label="P3" drivers={drivers} value={p3} setValue={setP3}/>
         <DriverSelect label="Pole Position" drivers={drivers} value={pole} setValue={setPole}/>
+
+        {selectedRace?.has_sprint && (
+          <>
+            <DriverSelect
+              label="Sprint Pole"
+              drivers={drivers}
+              value={sprintPole}
+              setValue={setSprintPole}
+            />
+            <DriverSelect
+              label="Sprint Winner"
+              drivers={drivers}
+              value={sprintWinner}
+              setValue={setSprintWinner}
+            />
+          </>
+        )}
 
       </div>
 
