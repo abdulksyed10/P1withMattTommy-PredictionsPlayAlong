@@ -11,6 +11,23 @@ import DriverGrid from "@/components/predictions/DriverGrid";
 import DriverOrTeamGrid from "@/components/predictions/DriverOrTeamGrid";
 import type { DriverRow, TeamRow, Pick } from "@/components/predictions/types";
 
+type OpenKey =
+  | "good"
+  | "flop"
+  | "sprint_pole"
+  | "sprint_winner"
+  | "pole_position"
+  | "p3"
+  | "p2"
+  | "win"
+  | null;
+
+type CurrentRace = {
+  id: string;
+  label: string;
+  hasSprint: boolean; // ADDED
+};
+
 export default function PredictPage() {
   const [loading, setLoading] = useState(true);
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
@@ -19,7 +36,7 @@ export default function PredictPage() {
 
   const [submitting, setSubmitting] = useState(false);
 
-  const [currentRace, setCurrentRace] = useState<{ id: string; label: string } | null>(null);
+  const [currentRace, setCurrentRace] = useState<CurrentRace | null>(null);
 
   const [authed, setAuthed] = useState<boolean | null>(null);
 
@@ -28,9 +45,11 @@ export default function PredictPage() {
   const submittedCheckInFlight = useRef(false);
 
   // expanded sections
-  const [openKey, setOpenKey] = useState<"good" | "flop" | "pole_position" | "p3" | "p2" | "win" | null>("good");
+  const [openKey, setOpenKey] = useState<OpenKey>("good");
 
   // selections
+  const [sprint_pole, setSprintPole] = useState<string | null>(null);
+  const [sprint_winner, setSprintWinner] = useState<string | null>(null);
   const [goodSurprise, setGoodSurprise] = useState<Pick>(null);
   const [bigFlop, setBigFlop] = useState<Pick>(null);
   const [pole_position, setPolePosition] = useState<string | null>(null);
@@ -45,12 +64,14 @@ export default function PredictPage() {
   const cardRefs = useRef<
     Record<NonNullable<typeof openKey>, HTMLDivElement | null>
   >({
-    good: null,
-    flop: null,
-    pole_position: null,
-    p3: null,
-    p2: null,
-    win: null,
+      good: null,
+      flop: null,
+      sprint_pole: null,
+      sprint_winner: null,
+      pole_position: null,
+      p3: null,
+      p2: null,
+      win: null,
   });
 
   function scrollToCard(key: NonNullable<typeof openKey>) {
@@ -105,7 +126,7 @@ export default function PredictPage() {
 
           supabase
             .from("races")
-            .select("id, name, round, race_date, seasons!inner(is_active)")
+            .select("id, name, round, race_date, has_sprint, seasons!inner(is_active)")
             .eq("seasons.is_active", true)
             .gte("race_date", today)
             .order("race_date", { ascending: true })
@@ -123,7 +144,11 @@ export default function PredictPage() {
         setTeams((t ?? []) as TeamRow[]);
 
         if (r) {
-          setCurrentRace({ id: r.id, label: `Round ${r.round}: ${r.name}` });
+          setCurrentRace({
+            id: r.id,
+            label: `Round ${r.round}: ${r.name}`,
+            hasSprint: r.has_sprint
+          });
         } else {
           setCurrentRace(null);
         }
@@ -200,6 +225,7 @@ export default function PredictPage() {
 
     submittedCheckInFlight.current = true;
     setCheckingSubmitted(true);
+
     try {
       const {
         data: { user },
@@ -258,7 +284,6 @@ export default function PredictPage() {
     return `${p.kind}:${p.id}`;
   }
 
-
   const podiumError = useMemo(() => {
     const ids = [winner, p2, p3].filter(Boolean) as string[];
     const set = new Set(ids);
@@ -276,219 +301,246 @@ export default function PredictPage() {
     return null;
   }, [goodSurprise, bigFlop]);
 
-  const nextKey: Record<
-    NonNullable<typeof openKey>,
-    typeof openKey
-  > = {
-    good: "flop",
-    flop: "pole_position",
-    pole_position: "p3",
-    p3: "p2",
-    p2: "win",
-    win: null,
-  };
+  const stepOrder = useMemo<Exclude<OpenKey, null>[]>(() => {
+    if (currentRace?.hasSprint) {
+      return ["good", "flop", "sprint_pole", "sprint_winner", "pole_position", "p3", "p2", "win"];
+    }
+    return ["good", "flop", "pole_position", "p3", "p2", "win"];
+  }, [currentRace?.hasSprint]);
 
-  function advance(from: NonNullable<typeof openKey>) {
-    setOpenKey(nextKey[from]);
+  function advance(from: Exclude<OpenKey, null>) {
+    const idx = stepOrder.indexOf(from);
+    const next = idx >= 0 ? stepOrder[idx + 1] ?? null : null;
+    setOpenKey(next);
   }
 
   function keyOfPick(p: Pick) {
-  if (!p) return null;
-  return `${p.kind}:${p.id}`;
-}
+    if (!p) return null;
+    return `${p.kind}:${p.id}`;
+  }
 
-function willConflictIfSetGood(next: Pick) {
-  const a = keyOfPick(next);
-  const b = keyOfPick(bigFlop);
-  return !!(a && b && a === b);
-}
+  function willConflictIfSetGood(next: Pick) {
+    const a = keyOfPick(next);
+    const b = keyOfPick(bigFlop);
+    return !!(a && b && a === b);
+  }
 
-function willConflictIfSetFlop(next: Pick) {
-  const a = keyOfPick(goodSurprise);
-  const b = keyOfPick(next);
-  return !!(a && b && a === b);
-}
+  function willConflictIfSetFlop(next: Pick) {
+    const a = keyOfPick(goodSurprise);
+    const b = keyOfPick(next);
+    return !!(a && b && a === b);
+  }
 
-function willConflictPodium(nextWinner: string | null, nextP2: string | null, nextP3: string | null) {
-  const ids = [nextWinner, nextP2, nextP3].filter(Boolean) as string[];
-  return new Set(ids).size !== ids.length;
-}
+  function willConflictPodium(nextWinner: string | null, nextP2: string | null, nextP3: string | null) {
+    const ids = [nextWinner, nextP2, nextP3].filter(Boolean) as string[];
+    return new Set(ids).size !== ids.length;
+  }
 
-function openAndScrollPodiumFocus(preferred?: "p3" | "p2" | "win") {
-  const k: "p3" | "p2" | "win" =
-    preferred ?? (openKey === "win" || openKey === "p2" || openKey === "p3" ? openKey : "win");
-  setOpenKey(k);
-  window.setTimeout(() => scrollToCard(k), 0);
-}
+  function openAndScrollPodiumFocus(preferred?: "p3" | "p2" | "win") {
+    const k: "p3" | "p2" | "win" =
+      preferred ?? (openKey === "win" || openKey === "p2" || openKey === "p3" ? openKey : "win");
+    setOpenKey(k);
+    window.setTimeout(() => scrollToCard(k), 0);
+  }
 
-async function handleSubmit() {
-  if (submitting) return;
+  async function handleSubmit() {
+    if (submitting) return;
 
-  try {
-    setSubmitting(true);
+    try {
+      setSubmitting(true);
 
-    // 0) must be logged in
-    const {
-      data: { user },
-      error: userErr,
-    } = await supabase.auth.getUser();
+      // 0) must be logged in
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser();
 
-    if (userErr || !user) {
-      alert("You must be logged in to submit predictions.");
-      return;
-    }
-
-    // 1) validate good surprise, flop, and podium uniqueness
-    if (surpriseFlopError) {
-      const k = openKey === "flop" ? "flop" : "good";
-      setOpenKey(k);
-      window.setTimeout(() => scrollToCard(k), 0);
-      alert(surpriseFlopError);
-      return;
-    }
-    if (podiumError) {
-      openAndScrollPodiumFocus();
-      alert(podiumError);
-      return;
-    }
-
-    const missing: string[] = [];
-    if (!goodSurprise) missing.push("Good Surprise");
-    if (!bigFlop) missing.push("Big Flop");
-    if (!pole_position) missing.push("Pole Position");
-    if (!p3) missing.push("P3");
-    if (!p2) missing.push("P2");
-    if (!winner) missing.push("Race Winner");
-
-    if (missing.length) {
-      alert(`Missing: ${missing.join(", ")}`);
-      return;
-    }
-
-    // 2) determine race (next upcoming race in active season)
-    if (!currentRace?.id) {
-      alert("No upcoming race found in active season.");
-      return;
-    }
-    const raceId = currentRace.id;
-
-    // 3) lock check via FP1
-    const { data: fp1, error: fp1Err } = await supabase
-      .from("race_sessions")
-      .select("starts_at")
-      .eq("race_id", raceId)
-      .eq("session", "fp1")
-      .maybeSingle();
-
-    if (fp1Err || !fp1?.starts_at) {
-      alert(fp1Err?.message ?? "FP1 starts_at not configured for this race.");
-      return;
-    }
-
-    if (Date.now() >= new Date(fp1.starts_at).getTime()) {
-      alert("Predictions are locked (FP1 has started).");
-      return;
-    }
-
-    // 4) fetch question IDs by key
-    const QUESTION_KEYS = ["good_surprise", "big_flop", "pole_position", "p3", "p2", "p1_winner"] as const;
-
-    const { data: questions, error: qErr } = await supabase
-      .from("questions")
-      .select("id, key")
-      .in("key", [...QUESTION_KEYS]);
-
-    if (qErr || !questions || questions.length !== QUESTION_KEYS.length) {
-      alert(qErr?.message ?? "Questions missing. Check questions.key values.");
-      return;
-    }
-
-    const qidByKey = new Map<string, string>();
-    for (const q of questions as any[]) qidByKey.set(q.key, q.id);
-
-    for (const k of QUESTION_KEYS) {
-      if (!qidByKey.get(k)) {
-        alert(`Missing question in DB for key: ${k}`);
+      if (userErr || !user) {
+        alert("You must be logged in to submit predictions.");
         return;
       }
-    }
 
-    const nowIso = new Date().toISOString();
+      // 1) validate good surprise, flop, and podium uniqueness
+      if (surpriseFlopError) {
+        const k = openKey === "flop" ? "flop" : "good";
+        setOpenKey(k);
+        window.setTimeout(() => scrollToCard(k), 0);
+        alert(surpriseFlopError);
+        return;
+      }
+      if (podiumError) {
+        openAndScrollPodiumFocus();
+        alert(podiumError);
+        return;
+      }
 
-    // 5) upsert prediction_set
-    const { data: setRow, error: setErr } = await supabase
-      .from("prediction_sets")
-      .upsert(
+      const missing: string[] = [];
+      if (!goodSurprise) missing.push("Good Surprise");
+      if (!bigFlop) missing.push("Big Flop");
+      if (currentRace?.hasSprint && !sprint_pole) missing.push("Sprint Pole");
+      if (currentRace?.hasSprint && !sprint_winner) missing.push("Sprint Winner");
+      if (!pole_position) missing.push("Pole Position");
+      if (!p3) missing.push("P3");
+      if (!p2) missing.push("P2");
+      if (!winner) missing.push("Race Winner");
+
+      if (missing.length) {
+        alert(`Missing: ${missing.join(", ")}`);
+        return;
+      }
+
+      // 2) determine race (next upcoming race in active season)
+      if (!currentRace?.id) {
+        alert("No upcoming race found in active season.");
+        return;
+      }
+      const raceId = currentRace.id;
+
+      // 3) lock check via FP1
+      const { data: fp1, error: fp1Err } = await supabase
+        .from("race_sessions")
+        .select("starts_at")
+        .eq("race_id", raceId)
+        .eq("session", "fp1")
+        .maybeSingle();
+
+      if (fp1Err || !fp1?.starts_at) {
+        alert(fp1Err?.message ?? "FP1 starts_at not configured for this race.");
+        return;
+      }
+
+      if (Date.now() >= new Date(fp1.starts_at).getTime()) {
+        alert("Predictions are locked (FP1 has started).");
+        return;
+      }
+
+      // 4) fetch question IDs by key
+      const QUESTION_KEYS = [
+        "good_surprise",
+        "big_flop",
+        ...(currentRace.hasSprint ? (["sprint_pole", "sprint_winner"] as const) : []),
+        "pole_position",
+        "p3",
+        "p2",
+        "p1_winner",
+      ] as const;
+
+      const { data: questions, error: qErr } = await supabase
+        .from("questions")
+        .select("id, key")
+        .in("key", [...QUESTION_KEYS]);
+
+      if (qErr || !questions || questions.length !== QUESTION_KEYS.length) {
+        alert(qErr?.message ?? "Questions missing. Check questions.key values.");
+        return;
+      }
+
+      const qidByKey = new Map<string, string>();
+      for (const q of questions as any[]) qidByKey.set(q.key, q.id);
+
+      for (const k of QUESTION_KEYS) {
+        if (!qidByKey.get(k)) {
+          alert(`Missing question in DB for key: ${k}`);
+          return;
+        }
+      }
+
+      const nowIso = new Date().toISOString();
+
+      // 5) upsert prediction_set
+      const { data: setRow, error: setErr } = await supabase
+        .from("prediction_sets")
+        .upsert(
+          {
+            user_id: user.id,
+            race_id: raceId,
+            status: "submitted",
+            submitted_at: nowIso,
+            updated_at: nowIso,
+          },
+          { onConflict: "user_id,race_id" }
+        )
+        .select("id")
+        .single();
+
+      if (setErr || !setRow) {
+        alert(setErr?.message ?? "Failed to save prediction set.");
+        return;
+      }
+
+      const predictionSetId = setRow.id as string;
+
+      // 6) upsert predictions
+      const rows = [
         {
-          user_id: user.id,
-          race_id: raceId,
-          status: "submitted",
-          submitted_at: nowIso,
-          updated_at: nowIso,
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("good_surprise"),
+          answer_driver_id: goodSurprise?.kind === "driver" ? goodSurprise.id : null,
+          answer_team_id: goodSurprise?.kind === "team" ? goodSurprise.id : null,
+          answer_int: null,
+          answer_text: null,
         },
-        { onConflict: "user_id,race_id" }
-      )
-      .select("id")
-      .single();
-
-    if (setErr || !setRow) {
-      alert(setErr?.message ?? "Failed to save prediction set.");
-      return;
-    }
-
-    const predictionSetId = setRow.id as string;
-
-    // 6) upsert predictions
-    const rows = [
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("good_surprise"),
-        answer_driver_id: goodSurprise?.kind === "driver" ? goodSurprise.id : null,
-        answer_team_id: goodSurprise?.kind === "team" ? goodSurprise.id : null,
-        answer_int: null,
-        answer_text: null,
-      },
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("big_flop"),
-        answer_driver_id: bigFlop?.kind === "driver" ? bigFlop.id : null,
-        answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
-        answer_int: null,
-        answer_text: null,
-      },
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("pole_position"),
-        answer_driver_id: pole_position,
-        answer_team_id: null,
-        answer_int: null,
-        answer_text: null,
-      },
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("p3"),
-        answer_driver_id: p3,
-        answer_team_id: null,
-        answer_int: null,
-        answer_text: null,
-      },
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("p2"),
-        answer_driver_id: p2,
-        answer_team_id: null,
-        answer_int: null,
-        answer_text: null,
-      },
-      {
-        prediction_set_id: predictionSetId,
-        question_id: qidByKey.get("p1_winner"),
-        answer_driver_id: winner,
-        answer_team_id: null,
-        answer_int: null,
-        answer_text: null,
-      },
-    ];
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("big_flop"),
+          answer_driver_id: bigFlop?.kind === "driver" ? bigFlop.id : null,
+          answer_team_id: bigFlop?.kind === "team" ? bigFlop.id : null,
+          answer_int: null,
+          answer_text: null,
+        },
+        ...(currentRace.hasSprint
+          ? [
+              {
+                prediction_set_id: predictionSetId,
+                question_id: qidByKey.get("sprint_pole"),
+                answer_driver_id: sprint_pole,
+                answer_team_id: null,
+                answer_int: null,
+                answer_text: null,
+              },
+              {
+                prediction_set_id: predictionSetId,
+                question_id: qidByKey.get("sprint_winner"),
+                answer_driver_id: sprint_winner,
+                answer_team_id: null,
+                answer_int: null,
+                answer_text: null,
+              },
+            ]
+          : []),
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("pole_position"),
+          answer_driver_id: pole_position,
+          answer_team_id: null,
+          answer_int: null,
+          answer_text: null,
+        },
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("p3"),
+          answer_driver_id: p3,
+          answer_team_id: null,
+          answer_int: null,
+          answer_text: null,
+        },
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("p2"),
+          answer_driver_id: p2,
+          answer_team_id: null,
+          answer_int: null,
+          answer_text: null,
+        },
+        {
+          prediction_set_id: predictionSetId,
+          question_id: qidByKey.get("p1_winner"),
+          answer_driver_id: winner,
+          answer_team_id: null,
+          answer_int: null,
+          answer_text: null,
+        },
+      ];
 
       const { error: predErr } = await supabase
         .from("predictions")
@@ -562,12 +614,18 @@ async function handleSubmit() {
       <div className="flex items-start justify-between gap-4 mb-4">
         <SectionHeader
           title="Race Predictions"
-          subtitle="Submit before Practice 1. First race week is standard (no sprint)."
+          subtitle={
+            currentRace?.hasSprint
+              ? "Submit before Practice 1. This is a sprint weekend, so sprint questions are included."
+              : "Submit before Practice 1."
+          }
         />
         <div className="text-right shrink-0">
           <div className="text-xs text-muted-foreground">Predicting for</div>
           <div className="text-sm font-semibold">
-            {currentRace ? currentRace.label : "—"}
+            {currentRace
+              ? `${currentRace.label}${currentRace.hasSprint ? " • Sprint Weekend" : ""}`
+              : "—"}
           </div>
         </div>
       </div>
@@ -638,6 +696,53 @@ async function handleSubmit() {
             />
           </QuestionCard>
         </div>
+
+        {currentRace?.hasSprint ? (
+          <div
+            ref={(el) => {
+              cardRefs.current.sprint_pole = el;
+            }}
+          >
+            <QuestionCard
+              title="Sprint Pole"
+              description="Pick the driver who will take sprint qualifying pole."
+              expanded={openKey === "sprint_pole"}
+              onToggle={() => setOpenKey(openKey === "sprint_pole" ? null : "sprint_pole")}
+              summary={sprint_pole ? `${driverById.get(sprint_pole)?.full_name ?? "Selected"}` : "None"}
+            >
+              <DriverGrid
+                drivers={drivers}
+                selectedId={sprint_pole}
+                onSelect={setSprintPole}
+                onPicked={() => advance("sprint_pole")}
+              />
+            </QuestionCard>
+          </div>
+        ) : null}
+
+        {/* ADDED: Sprint Winner card, only for sprint weekends */}
+        {currentRace?.hasSprint ? (
+          <div
+            ref={(el) => {
+              cardRefs.current.sprint_winner = el;
+            }}
+          >
+            <QuestionCard
+              title="Sprint Winner"
+              description="Pick the driver who will win the sprint."
+              expanded={openKey === "sprint_winner"}
+              onToggle={() => setOpenKey(openKey === "sprint_winner" ? null : "sprint_winner")}
+              summary={sprint_winner ? `${driverById.get(sprint_winner)?.full_name ?? "Selected"}` : "None"}
+            >
+              <DriverGrid
+                drivers={drivers}
+                selectedId={sprint_winner}
+                onSelect={setSprintWinner}
+                onPicked={() => advance("sprint_winner")}
+              />
+            </QuestionCard>
+          </div>
+        ) : null}
 
         <div ref={(el) => { cardRefs.current.pole_position = el; }}>
           <QuestionCard
@@ -775,6 +880,8 @@ async function handleSubmit() {
               onClick={() => {
                 setGoodSurprise(null);
                 setBigFlop(null);
+                setSprintPole(null);
+                setSprintWinner(null);
                 setPolePosition(null);
                 setP3(null);
                 setP2(null);
